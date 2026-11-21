@@ -1,4 +1,5 @@
-name: Magnit API test
+
+name: Magnit goods API test
 
 on:
   workflow_dispatch:
@@ -8,12 +9,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Search store
+      - name: Search Royal Kuchen in test store
         run: |
-          curl --compressed -sS --max-time 20 \
+          API_URL='https://magnit.ru''/webgate/v2/goods/search'
+
+          curl --compressed -sS --max-time 30 \
             -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
+            "$API_URL" \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json' \
+            -H 'Origin: https://magnit.ru' \
             -H 'Referer: https://magnit.ru/' \
-            -d '{"filters":{"query":"Сочи, Советская, 42"},"pagination":{"size":10}}'
+            -d '{
+              "term": "Royal Kuchen",
+              "pagination": {
+                "limit": 50,
+                "offset": 0
+              },
+              "sort": {
+                "order": "desc",
+                "type": "popularity"
+              },
+              "includeAdultGoods": true,
+              "storeCode": "233462",
+              "storeType": "1",
+              "catalogType": "1"
+            }' \
+            -w '\nHTTP_STATUS:%{http_code}\n'
+            
