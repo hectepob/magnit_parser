@@ -1,4 +1,3 @@
-
 name: Magnit goods API test
 
 on:
@@ -9,31 +8,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Search Royal Kuchen in test store
+      - name: Search Royal Kuchen in target stores
         run: |
-          API_URL='https://magnit.ru''/webgate/v2/goods/search'
+          API_HOST='magnit''.'ru
+          API_URL="https://${API_HOST}/webgate/v2/goods/search"
 
-          curl --compressed -sS --max-time 30 \
-            -X POST \
-            "$API_URL" \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -H 'Origin: https://magnit.ru' \
-            -H 'Referer: https://magnit.ru/' \
-            -d '{
-              "term": "Royal Kuchen",
-              "pagination": {
-                "limit": 50,
-                "offset": 0
-              },
-              "sort": {
-                "order": "desc",
-                "type": "popularity"
-              },
-              "includeAdultGoods": true,
-              "storeCode": "233462",
-              "storeType": "1",
-              "catalogType": "1"
-            }' \
-            -w '\nHTTP_STATUS:%{http_code}\n'
-            
+          for STORE_CODE in 230487 233561; do
+            echo ""
+            echo "========================================"
+            echo "STORE: $STORE_CODE"
+            echo "========================================"
+
+            curl --compressed -sS --max-time 30 \
+              -X POST \
+              "$API_URL" \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json' \
+              -H "Origin: https://${API_HOST}" \
+              -H "Referer: https://${API_HOST}/" \
+              -d "{
+                \"term\": \"Royal Kuchen\",
+                \"pagination\": {
+                  \"limit\": 50,
+                  \"offset\": 0
+                },
+                \"sort\": {
+                  \"order\": \"desc\",
+                  \"type\": \"popularity\"
+                },
+                \"includeAdultGoods\": true,
+                \"storeCode\": \"${STORE_CODE}\",
+                \"storeType\": \"1\",
+                \"catalogType\": \"1\"
+              }" \
+              -w '\nHTTP_STATUS:%{http_code}\n'
+          done
