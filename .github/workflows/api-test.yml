@@ -1,4 +1,4 @@
-name: Magnit goods API test
+name: Magnit partial name search test
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Search Royal Kuchen in target stores
+      - name: Search Royal in target stores
         run: |
           API_HOST='magnit''.'ru
           API_URL="https://${API_HOST}/webgate/v2/goods/search"
@@ -27,7 +27,7 @@ jobs:
               -H "Origin: https://${API_HOST}" \
               -H "Referer: https://${API_HOST}/" \
               -d "{
-                \"term\": \"Royal Kuchen\",
+                \"term\": \"Royal\",
                 \"pagination\": {
                   \"limit\": 50,
                   \"offset\": 0
