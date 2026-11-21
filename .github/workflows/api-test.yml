@@ -9,30 +9,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Find store 1
+      - name: Test store search
         run: |
           curl -i -sS --max-time 20 \
             -X POST \
             'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
             -H 'Content-Type: application/json' \
             -H 'Accept: application/json' \
-            -d '{"query":"Ясногорская, 4/2","pagination":{"size":10}}'
-
-      - name: Find store 2
-        run: |
-          curl -i -sS --max-time 20 \
-            -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -d '{"query":"Бытха, 47А","pagination":{"size":10}}'
-
-      - name: Find store 3
-        run: |
-          curl -i -sS --max-time 20 \
-            -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -d '{"query":"Возрождения, 18","pagination":{"size":10}}'
+            -H 'Referer: https://magnit.ru/' \
+            -d '{"filters":{"query":"Ясногорская, 4/2"},"pagination":{"size":10}}'
             
