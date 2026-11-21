@@ -1,41 +1,7 @@
-
-name: Magnit API test
-
-on:
-  workflow_dispatch:
-
-jobs:
-  test-api:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Find store 1
-        run: |
-          curl --compressed -i -sS --max-time 20 \
-            -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -H 'Referer: https://magnit.ru/' \
-            -d '{"filters":{"query":"Ясногорская, 4/2"},"pagination":{"size":10}}'
-
-      - name: Find store 2
-        run: |
-          curl --compressed -i -sS --max-time 20 \
-            -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -H 'Referer: https://magnit.ru/' \
-            -d '{"filters":{"query":"Бытха, 47А"},"pagination":{"size":10}}'
-
-      - name: Find store 3
-        run: |
-          curl --compressed -i -sS --max-time 20 \
-            -X POST \
-            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
-            -H 'Content-Type: application/json' \
-            -H 'Accept: application/json' \
-            -H 'Referer: https://magnit.ru/' \
-            -d '{"filters":{"query":"Возрождения, 18"},"pagination":{"size":10}}'
-            
+curl --compressed -i -sS --max-time 20 \
+  -X POST \
+  'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json' \
+  -H 'Referer: https://magnit.ru/' \
+  -d '{"filters":{"query":"Советская, 42"},"pagination":{"size":10}}'
