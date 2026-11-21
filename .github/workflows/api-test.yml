@@ -9,19 +9,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check API 1
+      - name: Find store 1
         run: |
           curl -i -sS --max-time 20 \
             -X POST \
             'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
             -H 'Content-Type: application/json' \
-            -d '{}'
+            -H 'Accept: application/json' \
+            -d '{"query":"Ясногорская, 4/2","pagination":{"size":10}}'
 
-      - name: Check API 2
+      - name: Find store 2
         run: |
           curl -i -sS --max-time 20 \
             -X POST \
-            'https://web-gateway.middle-api.magnit.ru/v2/goods/search' \
+            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
             -H 'Content-Type: application/json' \
-            -d '{}'
+            -H 'Accept: application/json' \
+            -d '{"query":"Бытха, 47А","pagination":{"size":10}}'
+
+      - name: Find store 3
+        run: |
+          curl -i -sS --max-time 20 \
+            -X POST \
+            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -d '{"query":"Возрождения, 18","pagination":{"size":10}}'
             
