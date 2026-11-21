@@ -1,126 +1,72 @@
 
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magnit Parser — API Test</title>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 30px auto;
-            padding: 0 20px;
-            color: #222;
-        }
-
-        button {
-            padding: 10px 18px;
-            margin: 5px;
-            cursor: pointer;
-        }
-
-        pre {
-            background: #f2f2f2;
-            padding: 15px;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            border-radius: 5px;
-            min-height: 80px;
-        }
-
-        .result {
-            margin: 15px 0 25px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Проверка API Магнита</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 30px auto;
+      padding: 0 15px;
+      line-height: 1.5;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #f1f1f1;
+      padding: 12px;
+      border-radius: 6px;
+    }
+    button {
+      padding: 12px 18px;
+      margin: 5px 0;
+    }
+  </style>
 </head>
-
 <body>
+  <h2>Проверка API Магнита</h2>
 
-    <h1>Magnit Parser — проверка API</h1>
+  <button onclick="checkApi('https://magnit.ru/webgate/v1/stores-facade/search/detail')">
+    Проверить API №1
+  </button>
 
-    <p>
-        Первый технический тест: проверка доступа
-        к API Магнита из браузера.
-    </p>
+  <button onclick="checkApi('https://web-gateway.middle-api.magnit.ru/v2/goods/search')">
+    Проверить API №2
+  </button>
 
-    <h2>1. Поиск магазинов</h2>
+  <h3>Результат:</h3>
+  <pre id="result">Ожидание проверки...</pre>
 
-    <button onclick="testStores()">
-        Проверить API магазинов
-    </button>
+  <script>
+    async function checkApi(url) {
+      const result = document.getElementById("result");
+      result.textContent = "Отправка запроса:\n" + url;
 
-    <div class="result">
-        <pre id="storesResult">Ожидание проверки...</pre>
-    </div>
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          mode: "cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: "{}"
+        });
 
-    <h2>2. Поиск товаров</h2>
+        const body = await response.text();
 
-    <button onclick="testGoods()">
-        Проверить API товаров
-    </button>
+        result.textContent =
+          "HTTP статус: " + response.status +
+          "\n\nОтвет сервера:\n" + body;
 
-    <div class="result">
-        <pre id="goodsResult">Ожидание проверки...</pre>
-    </div>
-
-    <script>
-        const API = {
-            stores: "https://magnit.ru/webgate/v1/stores-facade/search/detail",
-            goods: "https://web-gateway.middle-api.magnit.ru/v2/goods/search"
-        };
-
-        async function testAPI(url, elementId) {
-            const output = document.getElementById(elementId);
-
-            output.textContent = "Отправка запроса...";
-
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    mode: "cors",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({})
-                });
-
-                const text = await response.text();
-
-                let result;
-
-                try {
-                    result = JSON.parse(text);
-                } catch {
-                    result = text;
-                }
-
-                output.textContent =
-                    "HTTP статус: " + response.status +
-                    "\n\nОтвет сервера:\n" +
-                    JSON.stringify(result, null, 2);
-
-            } catch (error) {
-                output.textContent =
-                    "ОШИБКА ЗАПРОСА:\n" +
-                    error.name + ": " + error.message +
-                    "\n\nПодробности смотри в консоли браузера.";
-                
-                console.error(error);
-            }
-        }
-
-        function testStores() {
-            testAPI(API.stores, "storesResult");
-        }
-
-        function testGoods() {
-            testAPI(API.goods, "goodsResult");
-        }
-    </script>
-
+      } catch (error) {
+        result.textContent =
+          "ОШИБКА ЗАПРОСА:\n" + error +
+          "\n\nПодробности смотри в консоли браузера.";
+      }
+    }
+  </script>
 </body>
 </html>
