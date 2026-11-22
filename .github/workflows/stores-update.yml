@@ -1,0 +1,148 @@
+
+name: Update Magnit stores
+
+on:
+  workflow_dispatch:
+    inputs:
+      city:
+        description: "Город для загрузки"
+        required: true
+        default: "Сочи"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update-stores:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download stores from Magnit API
+        env:
+          CITY: ${{ inputs.city }}
+        run: |
+          set -euo pipefail
+
+          BODY=$(python3 -c 'import json,os; print(json.dumps({"filters":{"query":os.environ["CITY"]},"pagination":{"size":500}}, ensure_ascii=False))')
+
+          HTTP_STATUS=$(curl --compressed -sS --max-time 60 \
+            -X POST \
+            'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
+            -H 'Content-Type: application/json' \
+            -H 'Accept: application/json' \
+            -H 'Referer: https://magnit.ru/' \
+            -d "$BODY" \
+            -o response.json \
+            -w '%{http_code}')
+
+          echo "HTTP STATUS: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            cat response.json
+            echo "::error::Magnit API returned HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+      - name: Prepare stores.json
+        env:
+          CITY: ${{ inputs.city }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from datetime import datetime, timezone
+
+          with open("response.json", encoding="utf-8") as f:
+              result = json.load(f)
+
+          data = result.get("data")
+
+          if not isinstance(data, list):
+              print("::error::API response does not contain a data array")
+              sys.exit(1)
+
+          stores = []
+          skipped = 0
+
+          for item in data:
+              if item.get("externalId", {}).get("owner") != "OWNER_MAGNIT":
+                  continue
+
+              coordinates = item.get("coordinates") or {}
+              external_id = item.get("externalId") or {}
+
+              try:
+                  latitude = float(coordinates["latitude"])
+                  longitude = float(coordinates["longitude"])
+              except (KeyError, TypeError, ValueError):
+                  skipped += 1
+                  continue
+
+              if not (-90 <= latitude <= 90):
+                  skipped += 1
+                  continue
+
+              if not (-180 <= longitude <= 180):
+                  skipped += 1
+                  continue
+
+              store_code = external_id.get("storeCode")
+              address = item.get("address")
+
+              if store_code is None or not str(store_code).strip():
+                  skipped += 1
+                  continue
+
+              if not isinstance(address, str) or not address.strip():
+                  skipped += 1
+                  continue
+
+              stores.append({
+                  "storeCode": str(store_code),
+                  "address": address.strip(),
+                  "latitude": latitude,
+                  "longitude": longitude,
+                  "format": item.get("storeTypeV2") or ""
+              })
+
+          if not stores:
+              print("::error::No valid Magnit stores found")
+              sys.exit(1)
+
+          output = {
+              "city": os.environ["CITY"],
+              "updatedAt": datetime.now(timezone.utc).isoformat(
+                  timespec="seconds"
+              ).replace("+00:00", "Z"),
+              "stores": stores
+          }
+
+          with open("stores.json", "w", encoding="utf-8") as f:
+              json.dump(output, f, ensure_ascii=False, indent=2)
+
+          print(f"Город: {output['city']}")
+          print(f"Всего записей API: {len(data)}")
+          print(f"Сохранено магазинов: {len(stores)}")
+          print(f"Пропущено некорректных записей: {skipped}")
+          PY
+
+      - name: Commit stores.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add stores.json
+
+          if git diff --cached --quiet; then
+            echo "stores.json не изменился"
+          else
+            git commit -m "Update Magnit stores data"
+            git push
+            echo "stores.json обновлён"
+          fi
+          
