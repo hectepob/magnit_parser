@@ -18,12 +18,7 @@
     <section class="search-panel">
       <div class="field">
         <label for="city">Город</label>
-        <input
-          type="text"
-          id="city"
-          value="Сочи"
-          placeholder="Например, Сочи"
-        >
+        <input type="text" id="city" value="Сочи">
       </div>
 
       <div class="field">
@@ -89,13 +84,15 @@
       </button>
     </section>
 
-    <section class="status-panel" id="statusPanel" aria-live="polite">
-      <p id="status">Укажите параметры поиска и нажмите «Найти магазины».</p>
+    <section class="status-panel">
+      <p id="status" aria-live="polite">
+        Укажите параметры поиска и нажмите «Найти магазины».
+      </p>
     </section>
 
     <section class="results-panel">
       <div class="results-header">
-        <h2>Результаты</h2>
+        <h2>Найденные магазины</h2>
         <span id="resultsCount">0 магазинов</span>
       </div>
 
@@ -104,13 +101,30 @@
         <input
           type="text"
           id="brand"
-          placeholder="Введите название бренда"
+          placeholder="Например, Royal"
           autocomplete="off"
         >
       </div>
 
+      <button type="button" id="goodsSearchButton">
+        Найти бренд
+      </button>
+
+      <p id="goodsStatus" class="goods-status" aria-live="polite"></p>
+
       <div id="results">
         <p class="empty-state">Здесь появятся найденные магазины.</p>
+      </div>
+    </section>
+
+    <section class="goods-panel">
+      <div class="results-header">
+        <h2>Найденные товары</h2>
+        <span id="goodsCount">0 товаров</span>
+      </div>
+
+      <div id="goodsResults">
+        <p class="empty-state">Здесь появятся результаты поиска бренда.</p>
       </div>
     </section>
   </main>
