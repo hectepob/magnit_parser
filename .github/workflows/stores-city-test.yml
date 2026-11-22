@@ -44,43 +44,71 @@ jobs:
 
           python3 - <<'PY'
           import json
-          from collections import Counter
+from collections import Counter, defaultdict
 
-          with open("response.json", encoding="utf-8") as f:
-              result = json.load(f)
+with open("response.json", encoding="utf-8") as f:
+    result = json.load(f)
 
-          data = result.get("data", [])
+data = result.get("data", [])
 
-          print("\n========== ОБЩАЯ ИНФОРМАЦИЯ ==========")
-          print("Всего по версии API:", result.get("totalCount"))
-          print("Фактически получено:", len(data))
+print("\n========== ОБЩАЯ ИНФОРМАЦИЯ ==========")
+print("Всего по версии API:", result.get("totalCount"))
+print("Фактически получено:", len(data))
 
-          print("\n========== СТРУКТУРА ПЕРВОГО МАГАЗИНА ==========")
-          if data:
-              print(json.dumps(data[0], ensure_ascii=False, indent=2))
+print("\n========== РАСПРЕДЕЛЕНИЕ ПО OWNER ==========")
+owners = Counter(
+    s.get("externalId", {}).get("owner")
+    for s in data
+)
+for owner, count in owners.most_common():
+    print(f"{owner}: {count}")
 
-          print("\n========== ГОРОДА / CITY FIAS ID ==========")
-          city_ids = Counter(
-              str(s.get("cityFiasId"))
-              for s in data
-          )
-          for city_id, count in city_ids.most_common():
-              print(f"{city_id}: {count}")
+print("\n========== РАСПРЕДЕЛЕНИЕ ПО ФОРМАТАМ ==========")
+formats = Counter(s.get("storeTypeV2") for s in data)
+for fmt, count in formats.most_common():
+    print(f"{fmt}: {count}")
 
-          print("\n========== ЗАПИСИ С СОЧИ В АДРЕСЕ ==========")
-          sochi = [
-              s for s in data
-              if "сочи" in str(s.get("address", "")).lower()
-          ]
+print("\n========== CITYFIASID И ПРИМЕРЫ АДРЕСОВ ==========")
 
-          print("Количество:", len(sochi))
+cities = defaultdict(list)
 
-          for i, s in enumerate(sochi, 1):
-              print(f"\n{i}. {s.get('address')}")
-              print("Формат:", s.get("storeTypeV2"))
-              print("Тип:", s.get("storeType"))
-              print("Активен:", s.get("isActive"))
-              print("Координаты:", s.get("coordinates"))
-              print("External ID:", s.get("externalId"))
+for s in data:
+    city_id = s.get("cityFiasId")
+    cities[city_id].append(s)
+
+for city_id, stores in sorted(
+    cities.items(),
+    key=lambda x: len(x[1]),
+    reverse=True
+):
+    print(f"\nCITYFIASID: {city_id}")
+    print("Количество записей:", len(stores))
+
+    for s in stores[:5]:
+        owner = s.get("externalId", {}).get("owner")
+        code = s.get("externalId", {}).get("storeCode")
+        print(
+            f"  {s.get('address')} | "
+            f"{s.get('storeTypeV2')} | "
+            f"{owner} | {code}"
+        )
+
+print("\n========== СОЧИ: ТОЛЬКО OWNER_MAGNIT ==========")
+
+sochi_magnit = [
+    s for s in data
+    if "сочи" in str(s.get("address", "")).lower()
+    and s.get("externalId", {}).get("owner") == "OWNER_MAGNIT"
+]
+
+print("Количество:", len(sochi_magnit))
+
+for i, s in enumerate(sochi_magnit, 1):
+    print(
+        f"{i}. {s.get('address')} | "
+        f"{s.get('storeTypeV2')} | "
+        f"{s.get('externalId', {}).get('storeCode')} | "
+        f"{s.get('cityFiasId')}"
+    )
           PY
           
