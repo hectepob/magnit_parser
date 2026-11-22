@@ -1,154 +1,460 @@
 
 "use strict";
 
-window.MagnitApi = {
-  async loadStores() {
-    const url = new URL("stores.json", window.location.href);
+document.addEventListener("DOMContentLoaded", () => {
+  const cityInput = document.getElementById("city");
+  const centerInput = document.getElementById("center");
+  const radiusInput = document.getElementById("radius");
+  const brandInput = document.getElementById("brand");
 
-    let response;
+  const formatInputs = document.querySelectorAll(
+    'input[name="format"]'
+  );
 
-    try {
-      response = await fetch(url, {
-        method: "GET",
-        cache: "no-cache"
-      });
-    } catch (error) {
-      throw new Error(
-        "Не удалось подключиться к файлу stores.json."
+  const searchButton = document.getElementById("searchButton");
+  const goodsSearchButton = document.getElementById("goodsSearchButton");
+
+  const statusElement = document.getElementById("status");
+  const goodsStatusElement = document.getElementById("goodsStatus");
+
+  const resultsElement = document.getElementById("results");
+  const resultsCountElement = document.getElementById("resultsCount");
+
+  const goodsResultsElement = document.getElementById("goodsResults");
+  const goodsCountElement = document.getElementById("goodsCount");
+
+  let currentFoundStores = [];
+
+  function plural(count, forms) {
+    const n = count % 100;
+    const last = count % 10;
+
+    if (n >= 11 && n <= 14) return forms[2];
+    if (last === 1) return forms[0];
+    if (last >= 2 && last <= 4) return forms[1];
+
+    return forms[2];
+  }
+
+  function setStatus(message) {
+    statusElement.textContent = message;
+  }
+
+  function clearResults() {
+    resultsElement.replaceChildren();
+    resultsCountElement.textContent = "0 магазинов";
+    currentFoundStores = [];
+  }
+
+  function createTextElement(className, text) {
+    const element = document.createElement("div");
+
+    element.className = className;
+    element.textContent = text;
+
+    return element;
+  }
+
+  function renderResults(stores) {
+    clearResults();
+
+    if (stores.length === 0) {
+      resultsElement.appendChild(
+        createTextElement(
+          "empty-state",
+          "В указанном радиусе магазины не найдены."
+        )
       );
+
+      return;
     }
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(
-          "Файл stores.json пока не создан."
-        );
-      }
+    currentFoundStores = stores;
 
-      throw new Error(
-        `Ошибка загрузки магазинов: HTTP ${response.status}.`
+    resultsCountElement.textContent =
+      `${stores.length} ${plural(stores.length, [
+        "магазин",
+        "магазина",
+        "магазинов"
+      ])}`;
+
+    const fragment = document.createDocumentFragment();
+
+    stores.forEach(store => {
+      const item = document.createElement("article");
+      item.className = "store-item";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "store-checkbox";
+      checkbox.checked = true;
+      checkbox.value = store.storeCode;
+      checkbox.dataset.storeCode = store.storeCode;
+
+      const content = document.createElement("div");
+      content.className = "store-content";
+
+      content.appendChild(
+        createTextElement("store-address", store.address)
       );
-    }
 
-    let data;
+      const details = [
+        `Расстояние: ${store.distance.toFixed(2)} км`,
+        `Код: ${store.storeCode}`
+      ];
 
-    try {
-      data = await response.json();
-    } catch (error) {
-      throw new Error(
-        "Файл stores.json содержит некорректный JSON."
+      if (store.format) {
+        details.push(`Формат: ${store.format}`);
+      }
+
+      content.appendChild(
+        createTextElement(
+          "store-details",
+          details.join(" · ")
+        )
       );
-    }
 
-    if (!data || !Array.isArray(data.stores)) {
-      throw new Error(
-        "В stores.json отсутствует массив stores."
-      );
-    }
+      const label = document.createElement("label");
+      label.className = "store-select";
 
-    if (data.stores.length === 0) {
-      throw new Error(
-        "В stores.json нет магазинов."
-      );
-    }
+      label.appendChild(checkbox);
+      label.appendChild(content);
 
-    const stores = data.stores.map((store, index) => {
-      if (!store || typeof store !== "object") {
-        throw new Error(
-          `Некорректная запись магазина №${index + 1}.`
-        );
-      }
-
-      const latitude = Number(store.latitude);
-      const longitude = Number(store.longitude);
-
-      if (
-        store.storeCode === undefined ||
-        store.storeCode === null ||
-        !String(store.storeCode).trim()
-      ) {
-        throw new Error(
-          `У магазина №${index + 1} отсутствует код.`
-        );
-      }
-
-      if (
-        typeof store.address !== "string" ||
-        !store.address.trim()
-      ) {
-        throw new Error(
-          `У магазина №${index + 1} отсутствует адрес.`
-        );
-      }
-
-      if (
-        !Number.isFinite(latitude) ||
-        latitude < -90 ||
-        latitude > 90 ||
-        !Number.isFinite(longitude) ||
-        longitude < -180 ||
-        longitude > 180
-      ) {
-        throw new Error(
-          `У магазина №${index + 1} некорректные координаты.`
-        );
-      }
-
-      return {
-        storeCode: String(store.storeCode),
-        address: store.address,
-        latitude,
-        longitude,
-        format: store.format || ""
-      };
+      item.appendChild(label);
+      fragment.appendChild(item);
     });
 
-    return {
-      city: data.city || "",
-      updatedAt: data.updatedAt || "",
-      stores
-    };
-  },
+    resultsElement.appendChild(fragment);
+  }
 
-  async searchGoods(term, storeCode) {
-    const response = await fetch(
-      "https://magnit.ru/webgate/v2/goods/search",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          term: term,
-          pagination: {
-            limit: 50,
-            offset: 0
-          },
-          sort: {
-            order: "desc",
-            type: "popularity"
-          },
-          includeAdultGoods: true,
-          storeCode: String(storeCode),
-          storeType: "1",
-          catalogType: "1"
-        })
+  async function searchStores() {
+    clearResults();
+
+    goodsResultsElement.replaceChildren();
+    goodsCountElement.textContent = "0 товаров";
+    goodsStatusElement.textContent = "";
+
+    const selectedFormats = Array.from(formatInputs)
+      .filter(input => input.checked)
+      .map(input => input.value);
+
+    if (selectedFormats.length === 0) {
+      setStatus("Выберите хотя бы один формат магазина.");
+      return;
+    }
+
+    let center;
+    let radius;
+
+    try {
+      center = MagnitGeo.parseCoordinates(centerInput.value);
+
+      radius = Number(radiusInput.value);
+
+      if (
+        !Number.isFinite(radius) ||
+        radius < 0.1 ||
+        radius > 100
+      ) {
+        throw new Error(
+          "Радиус должен быть от 0,1 до 100 км."
+        );
       }
+    } catch (error) {
+      setStatus(error.message);
+      return;
+    }
+
+    searchButton.disabled = true;
+    setStatus("Загружаем список магазинов...");
+
+    try {
+      const data = await MagnitApi.loadStores();
+
+      const requestedCity = cityInput.value.trim().toLocaleLowerCase("ru");
+      const loadedCity = data.city.trim().toLocaleLowerCase("ru");
+
+      if (requestedCity && loadedCity && requestedCity !== loadedCity) {
+        throw new Error(
+          `В файле загружены магазины города «${data.city}», а не «${cityInput.value.trim()}».`
+        );
+      }
+
+      const storesOfSelectedFormats = data.stores.filter(store =>
+        selectedFormats.includes(store.format)
+      );
+
+      const foundStores = storesOfSelectedFormats
+        .map(store => {
+          const distance = MagnitGeo.distanceKm(
+            center.latitude,
+            center.longitude,
+            store.latitude,
+            store.longitude
+          );
+
+          return {
+            ...store,
+            distance
+          };
+        })
+        .filter(store => store.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
+
+      renderResults(foundStores);
+
+      const updateInfo = data.updatedAt
+        ? ` Данные обновлены: ${data.updatedAt}.`
+        : "";
+
+      setStatus(
+        `Проверено магазинов выбранных форматов: ` +
+        `${storesOfSelectedFormats.length}. ` +
+        `В радиусе ${radius} км найдено: ${foundStores.length}.` +
+        updateInfo
+      );
+
+    } catch (error) {
+      clearResults();
+      setStatus(error.message || "Не удалось выполнить поиск.");
+    } finally {
+      searchButton.disabled = false;
+    }
+  }
+
+  async function runWithLimit(items, limit, callback) {
+    const results = new Array(items.length);
+    let nextIndex = 0;
+
+    async function worker() {
+      while (true) {
+        const index = nextIndex++;
+
+        if (index >= items.length) {
+          return;
+        }
+
+        try {
+          results[index] = await callback(items[index]);
+        } catch (error) {
+          results[index] = {
+            error: error.message || "Неизвестная ошибка"
+          };
+        }
+      }
+    }
+
+    const workers = Array.from(
+      { length: Math.min(limit, items.length) },
+      () => worker()
     );
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    await Promise.all(workers);
 
-    const data = await response.json();
-
-    if (!data || !Array.isArray(data.items)) {
-      throw new Error(
-        "В ответе API отсутствует массив товаров items."
-      );
-    }
-
-    return data.items;
+    return results;
   }
-};
+
+  function renderGoodsResults(results) {
+    goodsResultsElement.replaceChildren();
+
+    let totalGoods = 0;
+
+    const fragment = document.createDocumentFragment();
+
+    results.forEach(result => {
+      const storeBlock = document.createElement("article");
+      storeBlock.className = "goods-store";
+
+      const heading = document.createElement("h3");
+      heading.textContent =
+        `${result.store.address} · ${result.store.storeCode}`;
+
+      storeBlock.appendChild(heading);
+
+      if (result.error) {
+        storeBlock.appendChild(
+          createTextElement(
+            "goods-error",
+            `Ошибка запроса: ${result.error}`
+          )
+        );
+
+        fragment.appendChild(storeBlock);
+        return;
+      }
+
+      if (result.items.length === 0) {
+        storeBlock.appendChild(
+          createTextElement(
+            "empty-state",
+            "Товары по запросу не найдены."
+          )
+        );
+
+        fragment.appendChild(storeBlock);
+        return;
+      }
+
+      totalGoods += result.items.length;
+
+      result.items.forEach(product => {
+        const productBlock = document.createElement("div");
+        productBlock.className = "product-item";
+
+        const name = createTextElement(
+          "product-name",
+          product.name || "Название не указано"
+        );
+
+        productBlock.appendChild(name);
+
+        const details = [];
+
+        if (product.productId || product.id) {
+          details.push(
+            `Код товара: ${product.productId || product.id}`
+          );
+        }
+
+        if (product.quantity !== undefined) {
+          details.push(
+            `Остаток: ${product.quantity}`
+          );
+
+          if (Number(product.quantity) > 0) {
+            details.push("В наличии");
+          } else {
+            details.push("Нет в наличии");
+          }
+        }
+
+        if (product.price !== undefined) {
+          details.push(`Цена API: ${product.price}`);
+        }
+
+        productBlock.appendChild(
+          createTextElement(
+            "store-details",
+            details.join(" · ")
+          )
+        );
+
+        storeBlock.appendChild(productBlock);
+      });
+
+      fragment.appendChild(storeBlock);
+    });
+
+    goodsResultsElement.appendChild(fragment);
+
+    goodsCountElement.textContent =
+      `${totalGoods} ${plural(totalGoods, [
+        "товар",
+        "товара",
+        "товаров"
+      ])}`;
+
+    return totalGoods;
+  }
+
+  async function searchBrand() {
+    const term = brandInput.value.trim();
+
+    if (!term) {
+      goodsStatusElement.textContent =
+        "Введите название бренда.";
+
+      return;
+    }
+
+    const selectedCodes = new Set(
+      Array.from(
+        resultsElement.querySelectorAll(".store-checkbox:checked")
+      ).map(input => input.dataset.storeCode)
+    );
+
+    const selectedStores = currentFoundStores.filter(store =>
+      selectedCodes.has(store.storeCode)
+    );
+
+    if (selectedStores.length === 0) {
+      goodsStatusElement.textContent =
+        "Нет отмеченных магазинов для поиска.";
+
+      return;
+    }
+
+    goodsSearchButton.disabled = true;
+    searchButton.disabled = true;
+
+    goodsResultsElement.replaceChildren();
+    goodsCountElement.textContent = "Поиск...";
+    goodsStatusElement.textContent =
+      `Ищем «${term}» в ${selectedStores.length} магазинах...`;
+
+    try {
+      const results = await runWithLimit(
+        selectedStores,
+        5,
+        async store => {
+          const items = await MagnitApi.searchGoods(
+            term,
+            store.storeCode
+          );
+
+          return {
+            store,
+            items
+          };
+        }
+      );
+
+      const normalizedResults = results.map((result, index) => ({
+        store: selectedStores[index],
+        items: result && result.items ? result.items : [],
+        error: result && result.error ? result.error : null
+      }));
+
+      const totalGoods = renderGoodsResults(normalizedResults);
+
+      const errorsCount = normalizedResults.filter(
+        result => result.error
+      ).length;
+
+      const successfulCount = selectedStores.length - errorsCount;
+
+      goodsStatusElement.textContent =
+        `Обработано магазинов: ${successfulCount} из ${selectedStores.length}. ` +
+        `Найдено товаров: ${totalGoods}. ` +
+        `Ошибок: ${errorsCount}.`;
+
+    } catch (error) {
+      goodsStatusElement.textContent =
+        error.message || "Не удалось выполнить поиск.";
+    } finally {
+      goodsSearchButton.disabled = false;
+      searchButton.disabled = false;
+    }
+  }
+
+  searchButton.addEventListener("click", searchStores);
+  goodsSearchButton.addEventListener("click", searchBrand);
+
+  centerInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      searchStores();
+    }
+  });
+
+  radiusInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      searchStores();
+    }
+  });
+
+  brandInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      searchBrand();
+    }
+  });
+});
