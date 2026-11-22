@@ -46,14 +46,16 @@ body {
   margin-bottom: 16px;
 }
 
-.field label {
+.field label,
+.brand-field label {
   display: block;
   margin-bottom: 7px;
   font-size: 14px;
   font-weight: 600;
 }
 
-.field input {
+.field input,
+.brand-field input {
   width: 100%;
   height: 42px;
   padding: 0 12px;
@@ -62,7 +64,8 @@ body {
   font-size: 16px;
 }
 
-.field input:focus {
+.field input:focus,
+.brand-field input:focus {
   outline: none;
   border-color: #e30613;
   box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.12);
@@ -101,7 +104,7 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .results-header h2 {
@@ -129,6 +132,26 @@ button:disabled {
   border-top: none;
 }
 
+.store-select {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.store-checkbox {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+  margin: 2px 0 0;
+  accent-color: #e30613;
+  cursor: pointer;
+}
+
+.store-content {
+  min-width: 0;
+}
+
 .store-address {
   margin-bottom: 6px;
   font-weight: 600;
@@ -140,20 +163,8 @@ button:disabled {
   line-height: 1.5;
 }
 
-@media (max-width: 600px) {
-  body {
-    padding: 14px;
-  }
-
-  .search-panel,
-  .status-panel,
-  .results-panel {
-    padding: 16px;
-  }
-
-  .header h1 {
-    font-size: 24px;
-  }
+.brand-field {
+  margin-bottom: 20px;
 }
 
 .format-field {
@@ -189,4 +200,20 @@ button:disabled {
   margin: 0;
   accent-color: #e30613;
   cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 14px;
+  }
+
+  .search-panel,
+  .status-panel,
+  .results-panel {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
 }
