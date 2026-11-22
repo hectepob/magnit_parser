@@ -1,10 +1,10 @@
-
 "use strict";
 
 document.addEventListener("DOMContentLoaded", () => {
   const cityInput = document.getElementById("city");
   const centerInput = document.getElementById("center");
   const radiusInput = document.getElementById("radius");
+  const brandInput = document.getElementById("brand");
 
   const formatInputs = document.querySelectorAll(
     'input[name="format"]'
@@ -75,7 +75,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const item = document.createElement("article");
       item.className = "store-item";
 
-      item.appendChild(
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "store-checkbox";
+      checkbox.checked = true;
+      checkbox.value = store.storeCode;
+      checkbox.dataset.storeCode = store.storeCode;
+
+      const content = document.createElement("div");
+      content.className = "store-content";
+
+      content.appendChild(
         createTextElement("store-address", store.address)
       );
 
@@ -88,13 +98,20 @@ document.addEventListener("DOMContentLoaded", () => {
         details.push(`Формат: ${store.format}`);
       }
 
-      item.appendChild(
+      content.appendChild(
         createTextElement(
           "store-details",
           details.join(" · ")
         )
       );
 
+      const label = document.createElement("label");
+      label.className = "store-select";
+
+      label.appendChild(checkbox);
+      label.appendChild(content);
+
+      item.appendChild(label);
       fragment.appendChild(item);
     });
 
@@ -150,8 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       }
 
-      const foundStores = data.stores
-        .filter(store => selectedFormats.includes(store.format))
+      const storesOfSelectedFormats = data.stores.filter(store =>
+        selectedFormats.includes(store.format)
+      );
+
+      const foundStores = storesOfSelectedFormats
         .map(store => {
           const distance = MagnitGeo.distanceKm(
             center.latitude,
@@ -176,9 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setStatus(
         `Проверено магазинов выбранных форматов: ` +
-        `${data.stores.filter(store =>
-          selectedFormats.includes(store.format)
-        ).length}. ` +
+        `${storesOfSelectedFormats.length}. ` +
         `В радиусе ${radius} км найдено: ${foundStores.length}.` +
         updateInfo
       );
