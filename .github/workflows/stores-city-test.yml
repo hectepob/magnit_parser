@@ -1,3 +1,4 @@
+
 name: Magnit stores city test
 
 on:
@@ -14,14 +15,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Search stores by city
+      - name: Check store coordinates
         env:
           CITY: ${{ inputs.city }}
         run: |
           BODY=$(python3 -c 'import json,os; print(json.dumps({"filters":{"query":os.environ["CITY"]},"pagination":{"size":500}}, ensure_ascii=False))')
 
           echo "Город поиска: $CITY"
-          echo "Размер страницы: 500"
 
           HTTP_STATUS=$(curl --compressed -sS --max-time 60 \
             -X POST \
@@ -42,47 +42,75 @@ jobs:
           fi
 
           python3 - <<'PY'
-import json
+          import json
+          from collections import Counter
 
-with open("response.json", encoding="utf-8") as f:
-    result = json.load(f)
+          with open("response.json", encoding="utf-8") as f:
+              result = json.load(f)
 
-stores = [
-    s for s in result.get("data", [])
-    if s.get("externalId", {}).get("owner") == "OWNER_MAGNIT"
-]
+          data = result.get("data", [])
 
-valid = []
-problems = []
+          stores = [
+              s for s in data
+              if s.get("externalId", {}).get("owner") == "OWNER_MAGNIT"
+          ]
 
-for s in stores:
-    coords = s.get("coordinates") or {}
-    lat = coords.get("latitude")
-    lon = coords.get("longitude")
+          valid = []
+          missing = []
+          invalid = []
 
-    try:
-        lat = float(lat)
-        lon = float(lon)
+          for s in stores:
+              coords = s.get("coordinates")
 
-        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-            raise ValueError("Координаты вне допустимого диапазона")
+              if not isinstance(coords, dict):
+                  missing.append(s)
+                  continue
 
-        valid.append(s)
+              lat = coords.get("latitude")
+              lon = coords.get("longitude")
 
-    except (TypeError, ValueError):
-        problems.append(s)
+              if lat is None or lon is None:
+                  missing.append(s)
+                  continue
 
-print("\n========== ПРОВЕРКА КООРДИНАТ ==========")
-print("Магазинов OWNER_MAGNIT:", len(stores))
-print("Корректные координаты:", len(valid))
-print("Проблемные записи:", len(problems))
+              try:
+                  lat = float(lat)
+                  lon = float(lon)
+              except (TypeError, ValueError):
+                  invalid.append(s)
+                  continue
 
-if problems:
-    print("\nПримеры проблемных записей:")
-    for s in problems[:5]:
-        print(
-            f"{s.get('address')} | "
-            f"{s.get('externalId', {}).get('storeCode')} | "
-            f"{s.get('coordinates')}"
-        )
-PY
+              if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+                  invalid.append(s)
+                  continue
+
+              valid.append(s)
+
+          print("\n========== РЕЗУЛЬТАТ ==========")
+          print(f"Всего записей API: {len(data)}")
+          print(f"Магазинов OWNER_MAGNIT: {len(stores)}")
+          print(f"Корректные координаты: {len(valid)}")
+          print(f"Координаты отсутствуют: {len(missing)}")
+          print(f"Координаты некорректны: {len(invalid)}")
+
+          problems = missing + invalid
+
+          if problems:
+              print("\n========== ПРИМЕРЫ ПРОБЛЕМ ==========")
+
+              for s in problems[:10]:
+                  ext = s.get("externalId", {})
+                  print(
+                      f"{s.get('address')} | "
+                      f"{s.get('storeTypeV2')} | "
+                      f"{ext.get('storeCode')} | "
+                      f"{s.get('coordinates')}"
+                  )
+
+          print("\n========== ФОРМАТЫ МАГАЗИНОВ ==========")
+          formats = Counter(s.get("storeTypeV2") for s in stores)
+
+          for fmt, count in formats.most_common():
+              print(f"{fmt}: {count}")
+          PY
+          
