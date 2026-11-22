@@ -27,11 +27,12 @@
       </div>
 
       <div class="field">
-        <label for="center">Адрес или координаты центра</label>
+        <label for="center">Координаты центра</label>
         <input
           type="text"
           id="center"
-          placeholder="Например, 43.5855, 39.7231"
+          value="43.568674, 39.765322"
+          placeholder="Широта, долгота"
         >
       </div>
 
@@ -47,13 +48,49 @@
         >
       </div>
 
+      <fieldset class="format-field">
+        <legend>Формат магазина</legend>
+
+        <div class="format-options">
+          <label class="format-option">
+            <input type="checkbox" name="format" value="MM" checked>
+            <span>MM</span>
+          </label>
+
+          <label class="format-option">
+            <input type="checkbox" name="format" value="DG" checked>
+            <span>DG</span>
+          </label>
+
+          <label class="format-option">
+            <input type="checkbox" name="format" value="MA" checked>
+            <span>MA</span>
+          </label>
+
+          <label class="format-option">
+            <input type="checkbox" name="format" value="ME" checked>
+            <span>ME</span>
+          </label>
+
+          <label class="format-option">
+            <input type="checkbox" name="format" value="GM" checked>
+            <span>GM</span>
+          </label>
+
+          <label class="format-option">
+            <input type="checkbox" name="format" value="MC" checked>
+            <span>MC</span>
+          </label>
+        </div>
+      </fieldset>
+
       <button type="button" id="searchButton">
         Найти магазины
       </button>
     </section>
 
     <section class="status-panel" id="statusPanel" aria-live="polite">
-      <p id="status">Укажите центр поиска и нажмите «Найти магазины».</p>
+      <p id="status">Укажите параметры поиска и нажмите «Найти магазины».</p>
     </section>
 
     <section class="results-panel">
