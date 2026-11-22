@@ -217,3 +217,54 @@ button:disabled {
     font-size: 24px;
   }
 }
+
+
+.goods-panel {
+  padding: 20px;
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #e2e4e8;
+  border-radius: 10px;
+}
+
+.goods-status {
+  margin: 14px 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.goods-store {
+  padding: 16px 0;
+  border-top: 1px solid #eee;
+}
+
+.goods-store h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.product-item {
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f7f7f8;
+  border-radius: 6px;
+}
+
+.product-name {
+  margin-bottom: 6px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.goods-error {
+  color: #c62828;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .goods-panel {
+    padding: 16px;
+  }
+}
