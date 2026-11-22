@@ -6,14 +6,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const centerInput = document.getElementById("center");
   const radiusInput = document.getElementById("radius");
 
+  const formatInputs = document.querySelectorAll(
+    'input[name="format"]'
+  );
+
   const searchButton = document.getElementById("searchButton");
   const statusElement = document.getElementById("status");
   const resultsElement = document.getElementById("results");
   const resultsCountElement = document.getElementById("resultsCount");
 
-  /**
-   * Склонение слова «магазин».
-   */
   function pluralStores(count) {
     const lastTwo = count % 100;
     const last = count % 10;
@@ -33,24 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
     return "магазинов";
   }
 
-  /**
-   * Изменение статуса поиска.
-   */
   function setStatus(message) {
     statusElement.textContent = message;
   }
 
-  /**
-   * Очистка результатов.
-   */
   function clearResults() {
     resultsElement.replaceChildren();
     resultsCountElement.textContent = "0 магазинов";
   }
 
-  /**
-   * Создание элемента с текстом.
-   */
   function createTextElement(className, text) {
     const element = document.createElement("div");
 
@@ -60,9 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return element;
   }
 
-  /**
-   * Вывод найденных магазинов.
-   */
   function renderResults(stores) {
     clearResults();
 
@@ -112,14 +101,20 @@ document.addEventListener("DOMContentLoaded", () => {
     resultsElement.appendChild(fragment);
   }
 
-  /**
-   * Основной поиск магазинов.
-   */
   async function searchStores() {
     clearResults();
 
     let center;
     let radius;
+
+    const selectedFormats = Array.from(formatInputs)
+      .filter(input => input.checked)
+      .map(input => input.value);
+
+    if (selectedFormats.length === 0) {
+      setStatus("Выберите хотя бы один формат магазина.");
+      return;
+    }
 
     try {
       center = MagnitGeo.parseCoordinates(centerInput.value);
@@ -156,6 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const foundStores = data.stores
+        .filter(store => selectedFormats.includes(store.format))
         .map(store => {
           const distance = MagnitGeo.distanceKm(
             center.latitude,
@@ -179,7 +175,10 @@ document.addEventListener("DOMContentLoaded", () => {
         : "";
 
       setStatus(
-        `Проверено магазинов: ${data.stores.length}. ` +
+        `Проверено магазинов выбранных форматов: ` +
+        `${data.stores.filter(store =>
+          selectedFormats.includes(store.format)
+        ).length}. ` +
         `В радиусе ${radius} км найдено: ${foundStores.length}.` +
         updateInfo
       );
