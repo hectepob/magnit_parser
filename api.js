@@ -2,10 +2,6 @@
 "use strict";
 
 window.MagnitApi = {
-  /**
-   * Загружает подготовленный список магазинов
-   * из stores.json.
-   */
   async loadStores() {
     const url = new URL("stores.json", window.location.href);
 
@@ -25,7 +21,7 @@ window.MagnitApi = {
     if (!response.ok) {
       if (response.status === 404) {
         throw new Error(
-          "Файл stores.json пока не создан. Сначала нужно загрузить список магазинов."
+          "Файл stores.json пока не создан."
         );
       }
 
@@ -112,5 +108,47 @@ window.MagnitApi = {
       updatedAt: data.updatedAt || "",
       stores
     };
+  },
+
+  async searchGoods(term, storeCode) {
+    const response = await fetch(
+      "https://magnit.ru/webgate/v2/goods/search",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          term: term,
+          pagination: {
+            limit: 50,
+            offset: 0
+          },
+          sort: {
+            order: "desc",
+            type: "popularity"
+          },
+          includeAdultGoods: true,
+          storeCode: String(storeCode),
+          storeType: "1",
+          catalogType: "1"
+        })
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error(
+        "В ответе API отсутствует массив товаров items."
+      );
+    }
+
+    return data.items;
   }
 };
