@@ -155,3 +155,38 @@ button:disabled {
     font-size: 24px;
   }
 }
+
+.format-field {
+  margin: 0 0 20px;
+  padding: 12px;
+  border: 1px solid #c9cdd3;
+  border-radius: 6px;
+}
+
+.format-field legend {
+  padding: 0 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.format-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.format-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.format-option input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #e30613;
+  cursor: pointer;
+}
