@@ -19,13 +19,12 @@ jobs:
         env:
           CITY: ${{ inputs.city }}
         run: |
-          BODY=$(python3 -c 'import json,os; print(json.dumps({"filters":{"query":os.environ["CITY"]},"pagination":{"size":10}}, ensure_ascii=False))')
+          BODY=$(python3 -c 'import json,os; print(json.dumps({"filters":{"query":os.environ["CITY"]},"pagination":{"size":500}}, ensure_ascii=False))')
 
           echo "Город поиска: $CITY"
-          echo "Тело запроса: $BODY"
-          echo ""
+          echo "Размер страницы: 500"
 
-          HTTP_STATUS=$(curl --compressed -sS --max-time 30 \
+          HTTP_STATUS=$(curl --compressed -sS --max-time 60 \
             -X POST \
             'https://magnit.ru/webgate/v1/stores-facade/search/detail' \
             -H 'Content-Type: application/json' \
@@ -36,43 +35,52 @@ jobs:
             -w '%{http_code}')
 
           echo "HTTP STATUS: $HTTP_STATUS"
-          echo ""
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            cat response.json
+            echo "::error::API вернул HTTP $HTTP_STATUS"
+            exit 1
+          fi
 
           python3 - <<'PY'
           import json
+          from collections import Counter
 
           with open("response.json", encoding="utf-8") as f:
               result = json.load(f)
 
-          print("КЛЮЧИ ОТВЕТА:")
-          print(list(result.keys()))
-
-          print("\nОБЩИЕ СВЕДЕНИЯ:")
-          print(json.dumps(
-              {k: v for k, v in result.items() if k != "data"},
-              ensure_ascii=False,
-              indent=2
-          ))
-
           data = result.get("data", [])
 
-          print("\nКОЛИЧЕСТВО ПОЛУЧЕННЫХ ЗАПИСЕЙ:", len(data))
-          print("ОБЩЕЕ КОЛИЧЕСТВО (totalCount):", result.get("totalCount"))
+          print("\n========== ОБЩАЯ ИНФОРМАЦИЯ ==========")
+          print("Всего по версии API:", result.get("totalCount"))
+          print("Фактически получено:", len(data))
 
+          print("\n========== СТРУКТУРА ПЕРВОГО МАГАЗИНА ==========")
           if data:
-              print("\nПОЛЯ ПЕРВОЙ ЗАПИСИ:")
-              print(list(data[0].keys()))
+              print(json.dumps(data[0], ensure_ascii=False, indent=2))
 
-          print("\nСПИСОК МАГАЗИНОВ:")
-          for i, store in enumerate(data, 1):
-              print(f"{i}. {store.get('address', 'АДРЕС НЕ НАЙДЕН')}")
-              print(f"   Формат: {store.get('storeTypeV2', 'НЕИЗВЕСТЕН')}")
-              print(f"   Код: {store.get('storeCode', 'НЕИЗВЕСТЕН')}")
-              print()
+          print("\n========== ГОРОДА / CITY FIAS ID ==========")
+          city_ids = Counter(
+              str(s.get("cityFiasId"))
+              for s in data
+          )
+          for city_id, count in city_ids.most_common():
+              print(f"{city_id}: {count}")
+
+          print("\n========== ЗАПИСИ С СОЧИ В АДРЕСЕ ==========")
+          sochi = [
+              s for s in data
+              if "сочи" in str(s.get("address", "")).lower()
+          ]
+
+          print("Количество:", len(sochi))
+
+          for i, s in enumerate(sochi, 1):
+              print(f"\n{i}. {s.get('address')}")
+              print("Формат:", s.get("storeTypeV2"))
+              print("Тип:", s.get("storeType"))
+              print("Активен:", s.get("isActive"))
+              print("Координаты:", s.get("coordinates"))
+              print("External ID:", s.get("externalId"))
           PY
-
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "::error::API вернул HTTP $HTTP_STATUS"
-            exit 1
-          fi
           
