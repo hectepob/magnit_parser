@@ -3,70 +3,73 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Проверка API Магнита</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 30px auto;
-      padding: 0 15px;
-      line-height: 1.5;
-    }
-    pre {
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      background: #f1f1f1;
-      padding: 12px;
-      border-radius: 6px;
-    }
-    button {
-      padding: 12px 18px;
-      margin: 5px 0;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Поиск магазинов Магнит в заданном радиусе">
+  <title>Magnit Parser</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Проверка API Магнита</h2>
+  <main class="container">
+    <header class="header">
+      <h1>Magnit Parser</h1>
+      <p>Поиск магазинов Магнит по расстоянию от выбранной точки</p>
+    </header>
 
-  <button onclick="checkApi('https://magnit.ru/webgate/v1/stores-facade/search/detail')">
-    Проверить API №1
-  </button>
+    <section class="search-panel">
+      <div class="field">
+        <label for="city">Город</label>
+        <input
+          type="text"
+          id="city"
+          value="Сочи"
+          placeholder="Например, Сочи"
+        >
+      </div>
 
-  <button onclick="checkApi('https://web-gateway.middle-api.magnit.ru/v2/goods/search')">
-    Проверить API №2
-  </button>
+      <div class="field">
+        <label for="center">Адрес или координаты центра</label>
+        <input
+          type="text"
+          id="center"
+          placeholder="Например, 43.5855, 39.7231"
+        >
+      </div>
 
-  <h3>Результат:</h3>
-  <pre id="result">Ожидание проверки...</pre>
+      <div class="field">
+        <label for="radius">Радиус поиска, км</label>
+        <input
+          type="number"
+          id="radius"
+          min="0.1"
+          max="100"
+          step="0.1"
+          value="3"
+        >
+      </div>
 
-  <script>
-    async function checkApi(url) {
-      const result = document.getElementById("result");
-      result.textContent = "Отправка запроса:\n" + url;
+      <button type="button" id="searchButton">
+        Найти магазины
+      </button>
+    </section>
 
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: "{}"
-        });
+    <section class="status-panel" id="statusPanel" aria-live="polite">
+      <p id="status">Укажите центр поиска и нажмите «Найти магазины».</p>
+    </section>
 
-        const body = await response.text();
+    <section class="results-panel">
+      <div class="results-header">
+        <h2>Результаты</h2>
+        <span id="resultsCount">0 магазинов</span>
+      </div>
 
-        result.textContent =
-          "HTTP статус: " + response.status +
-          "\n\nОтвет сервера:\n" + body;
+      <div id="results">
+        <p class="empty-state">Здесь появятся найденные магазины.</p>
+      </div>
+    </section>
+  </main>
 
-      } catch (error) {
-        result.textContent =
-          "ОШИБКА ЗАПРОСА:\n" + error +
-          "\n\nПодробности смотри в консоли браузера.";
-      }
-    }
-  </script>
+  <script src="geo.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
