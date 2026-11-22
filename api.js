@@ -17,7 +17,8 @@ window.MagnitApi = {
       });
     } catch (error) {
       throw new Error(
-        "Не удалось загрузить список магазинов. Проверьте подключение к интернету."
+        "Не удалось загрузить список магазинов. " +
+        (error.message || error.name || "Ошибка сети.")
       );
     }
 
@@ -81,42 +82,57 @@ window.MagnitApi = {
    * Ищет товары по названию бренда в конкретном магазине.
    */
   async searchGoods(term, storeCode) {
+    const url = "https://magnit.ru/webgate/v2/goods/search";
+
+    const requestBody = {
+      term: term,
+      pagination: {
+        limit: 50,
+        offset: 0
+      },
+      sort: {
+        order: "desc",
+        type: "popularity"
+      },
+      includeAdultGoods: true,
+      storeCode: String(storeCode),
+      storeType: "1",
+      catalogType: "1"
+    };
+
     let response;
 
     try {
-      response = await fetch(
-        "https://magnit.ru/webgate/v2/goods/search",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            term: term,
-            pagination: {
-              limit: 50,
-              offset: 0
-            },
-            sort: {
-              order: "desc",
-              type: "popularity"
-            },
-            includeAdultGoods: true,
-            storeCode: String(storeCode),
-            storeType: "1",
-            catalogType: "1"
-          })
-        }
-      );
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(requestBody)
+      });
     } catch (error) {
-      throw new Error(
-        "Ошибка сетевого запроса. Возможно, браузер заблокировал обращение к API Магнита (CORS)."
-      );
+      const online = navigator.onLine;
+
+      const details = [
+        `Тип ошибки: ${error.name || "неизвестен"}`,
+        `Сообщение браузера: ${error.message || "не предоставлено"}`,
+        `Интернет: ${online ? "подключение определяется как активное" : "браузер сообщает об отсутствии подключения"}`,
+        `Магазин: ${storeCode}`,
+        `Адрес запроса: ${url}`,
+        "Возможные причины: CORS, сетевая ошибка или блокировка запроса."
+      ];
+
+      console.error("Ошибка запроса к API Магнита:", error);
+
+      throw new Error(details.join(" | "));
     }
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(
+        `HTTP ${response.status} ${response.statusText}. ` +
+        `Магазин: ${storeCode}.`
+      );
     }
 
     let data;
@@ -124,12 +140,14 @@ window.MagnitApi = {
     try {
       data = await response.json();
     } catch (error) {
-      throw new Error("API Магнита вернул некорректный JSON.");
+      throw new Error(
+        `API Магнита вернул некорректный JSON. Магазин: ${storeCode}.`
+      );
     }
 
     if (!data || !Array.isArray(data.items)) {
       throw new Error(
-        "В ответе API отсутствует список товаров."
+        `В ответе API отсутствует список товаров. Магазин: ${storeCode}.`
       );
     }
 
