@@ -3,6 +3,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   const cityInput = document.getElementById("city");
+  const storeSearchInput = document.getElementById("storeSearch");
   const storeSelect = document.getElementById("storeSelect");
   const centerInput = document.getElementById("center");
   const radiusInput = document.getElementById("radius");
@@ -58,27 +59,47 @@ document.addEventListener("DOMContentLoaded", () => {
     return element;
   }
 
-  function populateStoreSelect(stores) {
-    storeSelect.replaceChildren();
+function populateStoreSelect(stores, searchText = "") {
+  const previousValue = storeSelect.value;
+  const search = searchText.trim().toLocaleLowerCase("ru");
 
-    const emptyOption = document.createElement("option");
-    emptyOption.value = "";
+  const filteredStores = stores.filter(store =>
+    store.address.toLocaleLowerCase("ru").includes(search)
+  );
+
+  storeSelect.replaceChildren();
+
+  const emptyOption = document.createElement("option");
+  emptyOption.value = "";
+
+  if (search && filteredStores.length === 0) {
+    emptyOption.textContent = "Совпадений нет";
+  } else {
     emptyOption.textContent = "Не выбран";
+  }
 
-    storeSelect.appendChild(emptyOption);
+  storeSelect.appendChild(emptyOption);
 
-    stores.forEach(store => {
-      const option = document.createElement("option");
+  filteredStores.forEach(store => {
+    const option = document.createElement("option");
 
-      option.value = store.storeCode;
-      option.textContent =
-        `${store.address} · ${store.storeCode}`;
+    option.value = store.storeCode;
+    option.textContent =
+      `${store.address} · ${store.storeCode}`;
 
-      storeSelect.appendChild(option);
-    });
+    storeSelect.appendChild(option);
+  });
 
+  const previousStoreStillVisible = filteredStores.some(
+    store => store.storeCode === previousValue
+  );
+
+  if (previousStoreStillVisible) {
+    storeSelect.value = previousValue;
+  } else {
     storeSelect.value = "";
   }
+}
 
   async function loadStoresData() {
     if (!storesLoadPromise) {
@@ -453,6 +474,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  storeSearchInput.addEventListener("input", () => {
+  if (storesData) {
+    populateStoreSelect(
+      storesData.stores,
+      storeSearchInput.value
+    );
+  }
+});
+  
   storeSelect.addEventListener("change", () => {
     if (!storeSelect.value || !storesData) {
       return;
