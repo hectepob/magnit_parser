@@ -137,8 +137,8 @@ window.MagnitApi = {
    * Ожидает появления результатов с нужным requestId.
    */
   async waitForGoodsResults(requestId, onStatus) {
-    const maxAttempts = 200;
-    const interval = 3000;
+const maxAttempts = 240;
+const interval = 5000;
 
     const delay = ms =>
       new Promise(resolve => setTimeout(resolve, ms));
