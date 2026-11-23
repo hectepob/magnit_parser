@@ -280,9 +280,8 @@ jobs:
             --comment "Поиск завершён. Результаты опубликованы на сайте."
 
       - name: Delete old search issues
-        continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ISSUE_DELETE_TOKEN }}
         run: |
           set -euo pipefail
 
