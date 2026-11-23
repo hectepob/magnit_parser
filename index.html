@@ -107,32 +107,43 @@
       </p>
     </section>
 
-    <section class="results-panel">
-      <div class="results-header">
-        <h2>Найденные магазины</h2>
-        <span id="resultsCount">0 магазинов</span>
-      </div>
 
-      <div class="brand-field">
-        <label for="brand">Искомый бренд</label>
-        <input
-          type="text"
-          id="brand"
-          placeholder="Например, Royal"
-          autocomplete="off"
-        >
-      </div>
+<section class="results-panel">
+  <div class="results-header">
+    <h2>Найденные магазины</h2>
+    <span id="resultsCount">0 магазинов</span>
+  </div>
 
-      <button type="button" id="goodsSearchButton">
-        Найти бренд
-      </button>
+  <div id="results">
+    <p class="empty-state">Здесь появятся найденные магазины.</p>
+  </div>
 
-      <p id="goodsStatus" class="goods-status" aria-live="polite"></p>
+  <div class="brand-field">
+    <label for="brand">Искомый бренд</label>
+    <input
+      type="text"
+      id="brand"
+      placeholder="Например, Royal"
+      autocomplete="off"
+    >
+  </div>
 
-      <div id="results">
-        <p class="empty-state">Здесь появятся найденные магазины.</p>
-      </div>
-    </section>
+  <div class="brand-field">
+    <label for="excludeWords">Исключить из выдачи</label>
+    <input
+      type="text"
+      id="excludeWords"
+      placeholder="Например: пиво, коньяк, редис"
+      autocomplete="off"
+    >
+  </div>
+
+  <button type="button" id="goodsSearchButton">
+    Найти бренд
+  </button>
+
+  <p id="goodsStatus" class="goods-status" aria-live="polite"></p>
+</section>
 
     <section class="goods-panel">
       <div class="results-header">
