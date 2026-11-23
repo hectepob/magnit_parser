@@ -280,7 +280,11 @@ function populateStoreSelect(stores, searchText = "") {
     }
   }
 
-  function renderGoodsResults(results, excludedWords = []) {
+  function renderGoodsResults(
+  results,
+  excludedWords = [],
+  requiredWords = []
+) {
     goodsResultsElement.replaceChildren();
 
     let totalGoods = 0;
@@ -326,9 +330,15 @@ const filteredItems = result.items.filter(product => {
     product.name || ""
   ).toLocaleLowerCase("ru");
 
-  return !excludedWords.some(word =>
+  const containsAllRequiredWords = requiredWords.every(word =>
     productName.includes(word)
   );
+
+  const containsExcludedWords = excludedWords.some(word =>
+    productName.includes(word)
+  );
+
+  return containsAllRequiredWords && !containsExcludedWords;
 });
 
 if (filteredItems.length === 0) {
@@ -415,7 +425,21 @@ filteredItems.forEach(product => {
   }
 
   async function searchBrand() {
-    const term = brandInput.value.trim();
+    const rawTerm = brandInput.value.trim();
+
+const isStrictSearch =
+  rawTerm.length >= 2 &&
+  rawTerm.startsWith('"') &&
+  rawTerm.endsWith('"');
+
+const term = isStrictSearch
+  ? rawTerm.slice(1, -1).trim()
+  : rawTerm;
+
+const requiredWords = isStrictSearch
+  ? term.toLocaleLowerCase("ru").split(/\s+/).filter(Boolean)
+  : [];
+    
     const excludedWords = excludeWordsInput.value
   .split(/[,;\n]+/)
   .map(word => word.trim().toLocaleLowerCase("ru"))
@@ -477,9 +501,10 @@ filteredItems.forEach(product => {
         error: result.error || null
       }));
 
-      const totalGoods = renderGoodsResults(
+const totalGoods = renderGoodsResults(
   normalizedResults,
-  excludedWords
+  excludedWords,
+  requiredWords
 );
 
       const errorsCount = normalizedResults.filter(
