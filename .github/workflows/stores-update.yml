@@ -12,10 +12,20 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: magnit-goods-search
+  cancel-in-progress: false
 
 jobs:
   update-stores:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -145,4 +155,54 @@ jobs:
             git push
             echo "stores.json обновлён"
           fi
-          
+
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Preserve previous search results
+        env:
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          set -euo pipefail
+
+          RESULTS_URL="${PAGES_URL%/}/results.json"
+
+          echo "Загружаем прежние результаты: $RESULTS_URL"
+
+          if curl -fLsS --max-time 30 "$RESULTS_URL" -o results.json; then
+            echo "Прежний results.json сохранён"
+          else
+            echo "Прежние результаты не найдены. Создаём пустой results.json."
+
+            cat > results.json <<'JSON'
+          {
+            "requestId": null,
+            "issueNumber": null,
+            "brand": "",
+            "updatedAt": null,
+            "stores": []
+          }
+          JSON
+          fi
+
+      - name: Prepare GitHub Pages
+        run: |
+          mkdir -p _site
+
+          cp index.html _site/
+          cp style.css _site/
+          cp geo.js _site/
+          cp api.js _site/
+          cp app.js _site/
+          cp stores.json _site/
+          cp results.json _site/
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy site
+        id: deployment
+        uses: actions/deploy-pages@v4
