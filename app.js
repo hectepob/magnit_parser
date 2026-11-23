@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const centerInput = document.getElementById("center");
   const radiusInput = document.getElementById("radius");
   const brandInput = document.getElementById("brand");
+  const excludeWordsInput = document.getElementById("excludeWords");
 
   const formatInputs = document.querySelectorAll(
     'input[name="format"]'
@@ -279,7 +280,7 @@ function populateStoreSelect(stores, searchText = "") {
     }
   }
 
-  function renderGoodsResults(results) {
+  function renderGoodsResults(results, excludedWords = []) {
     goodsResultsElement.replaceChildren();
 
     let totalGoods = 0;
@@ -308,21 +309,43 @@ function populateStoreSelect(stores, searchText = "") {
         return;
       }
 
-      if (result.items.length === 0) {
-        storeBlock.appendChild(
-          createTextElement(
-            "empty-state",
-            "Товары по запросу не найдены."
-          )
-        );
+if (result.items.length === 0) {
+  storeBlock.appendChild(
+    createTextElement(
+      "empty-state",
+      "Товары по запросу не найдены."
+    )
+  );
 
-        fragment.appendChild(storeBlock);
-        return;
-      }
+  fragment.appendChild(storeBlock);
+  return;
+}
 
-      totalGoods += result.items.length;
+const filteredItems = result.items.filter(product => {
+  const productName = String(
+    product.name || ""
+  ).toLocaleLowerCase("ru");
 
-      result.items.forEach(product => {
+  return !excludedWords.some(word =>
+    productName.includes(word)
+  );
+});
+
+if (filteredItems.length === 0) {
+  storeBlock.appendChild(
+    createTextElement(
+      "empty-state",
+      "Все найденные товары исключены заданными словами."
+    )
+  );
+
+  fragment.appendChild(storeBlock);
+  return;
+}
+
+totalGoods += filteredItems.length;
+
+filteredItems.forEach(product => {
         const productBlock = document.createElement("div");
         productBlock.className = "product-item";
 
@@ -393,6 +416,10 @@ function populateStoreSelect(stores, searchText = "") {
 
   async function searchBrand() {
     const term = brandInput.value.trim();
+    const excludedWords = excludeWordsInput.value
+  .split(/[,;\n]+/)
+  .map(word => word.trim().toLocaleLowerCase("ru"))
+  .filter(word => word.length > 0);
 
     if (!term) {
       goodsStatusElement.textContent =
@@ -450,7 +477,10 @@ function populateStoreSelect(stores, searchText = "") {
         error: result.error || null
       }));
 
-      const totalGoods = renderGoodsResults(normalizedResults);
+      const totalGoods = renderGoodsResults(
+  normalizedResults,
+  excludedWords
+);
 
       const errorsCount = normalizedResults.filter(
         result => result.error
