@@ -222,38 +222,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function runWithLimit(items, limit, callback) {
-    const results = new Array(items.length);
-    let nextIndex = 0;
-
-    async function worker() {
-      while (true) {
-        const index = nextIndex++;
-
-        if (index >= items.length) {
-          return;
-        }
-
-        try {
-          results[index] = await callback(items[index]);
-        } catch (error) {
-          results[index] = {
-            error: error.message || "Неизвестная ошибка"
-          };
-        }
-      }
-    }
-
-    const workers = Array.from(
-      { length: Math.min(limit, items.length) },
-      () => worker()
-    );
-
-    await Promise.all(workers);
-
-    return results;
-  }
-
   function renderGoodsResults(results) {
     goodsResultsElement.replaceChildren();
 
@@ -387,30 +355,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     goodsResultsElement.replaceChildren();
     goodsCountElement.textContent = "Поиск...";
-    goodsStatusElement.textContent =
-      `Ищем «${term}» в ${selectedStores.length} магазинах...`;
 
     try {
-      const results = await runWithLimit(
-        selectedStores,
-        5,
-        async store => {
-          const items = await MagnitApi.searchGoods(
-            term,
-            store.storeCode
-          );
+      goodsStatusElement.textContent =
+        "Открываем GitHub для подтверждения поиска...";
 
-          return {
-            store,
-            items
-          };
+      const searchRequest = MagnitApi.startGoodsSearch(
+        term,
+        selectedStores
+      );
+
+      goodsStatusElement.textContent =
+        "В новой вкладке подтверди создание задачи на GitHub. " +
+        "После этого результаты появятся здесь автоматически.";
+
+      const data = await MagnitApi.waitForGoodsResults(
+        searchRequest.requestId,
+        message => {
+          goodsStatusElement.textContent = message;
         }
       );
 
-      const normalizedResults = results.map((result, index) => ({
-        store: selectedStores[index],
-        items: result && result.items ? result.items : [],
-        error: result && result.error ? result.error : null
+      const normalizedResults = data.stores.map(result => ({
+        store: result.store,
+        items: Array.isArray(result.items) ? result.items : [],
+        error: result.error || null
       }));
 
       const totalGoods = renderGoodsResults(normalizedResults);
@@ -419,10 +388,12 @@ document.addEventListener("DOMContentLoaded", () => {
         result => result.error
       ).length;
 
-      const successfulCount = selectedStores.length - errorsCount;
+      const successfulCount =
+        normalizedResults.length - errorsCount;
 
       goodsStatusElement.textContent =
-        `Обработано магазинов: ${successfulCount} из ${selectedStores.length}. ` +
+        `Поиск «${data.brand}» завершён. ` +
+        `Обработано магазинов: ${successfulCount} из ${normalizedResults.length}. ` +
         `Найдено товаров: ${totalGoods}. ` +
         `Ошибок: ${errorsCount}.`;
 
