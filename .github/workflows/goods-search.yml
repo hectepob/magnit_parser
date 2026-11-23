@@ -278,3 +278,116 @@ jobs:
           gh issue close "$ISSUE_NUMBER" \
             --repo "$GITHUB_REPOSITORY" \
             --comment "Поиск завершён. Результаты опубликованы на сайте."
+
+      - name: Delete old search issues
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          QUERY='
+          query($owner: String!, $name: String!, $cursor: String) {
+            repository(owner: $owner, name: $name) {
+              issues(
+                first: 100
+                after: $cursor
+                states: CLOSED
+                orderBy: {
+                  field: CREATED_AT
+                  direction: DESC
+                }
+              ) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+                nodes {
+                  id
+                  title
+                  author {
+                    login
+                  }
+                }
+              }
+            }
+          }'
+
+          : > search-issues.jsonl
+
+          CURSOR=""
+          HAS_NEXT="true"
+
+          while [ "$HAS_NEXT" = "true" ]; do
+            PAYLOAD=$(jq -n \
+              --arg query "$QUERY" \
+              --arg cursor "$CURSOR" \
+              '{
+                query: $query,
+                variables: {
+                  owner: "hectepob",
+                  name: "magnit_parser",
+                  cursor: (
+                    if $cursor == "" then null else $cursor end
+                  )
+                }
+              }')
+
+            RESPONSE=$(printf '%s' "$PAYLOAD" | gh api graphql --input -)
+
+            echo "$RESPONSE" | jq -e '.data.repository.issues.nodes' > /dev/null
+
+            echo "$RESPONSE" | jq -c '
+              .data.repository.issues.nodes[]
+              | select(.title | startswith("[MAGNIT-SEARCH]"))
+              | select(.author.login == "hectepob")
+            ' >> search-issues.jsonl
+
+            HAS_NEXT=$(echo "$RESPONSE" | jq -r \
+              '.data.repository.issues.pageInfo.hasNextPage')
+
+            CURSOR=$(echo "$RESPONSE" | jq -r \
+              '.data.repository.issues.pageInfo.endCursor // ""')
+          done
+
+          mapfile -t ISSUE_IDS < <(
+            jq -s -r '.[].id' search-issues.jsonl
+          )
+
+          ISSUE_COUNT=${#ISSUE_IDS[@]}
+
+          echo "Найдено закрытых поисковых Issues: $ISSUE_COUNT"
+
+          if [ "$ISSUE_COUNT" -le 2 ]; then
+            echo "Удаление не требуется. Оставляем все Issues."
+            exit 0
+          fi
+
+          echo "Оставляем два последних Issue."
+
+          for ((i=2; i<ISSUE_COUNT; i++)); do
+            ISSUE_ID="${ISSUE_IDS[$i]}"
+
+            echo "Удаляем старый Issue: $ISSUE_ID"
+
+            DELETE_RESPONSE=$(gh api graphql \
+              -f query='
+                mutation($id: ID!) {
+                  deleteIssue(input: {issueId: $id}) {
+                    clientMutationId
+                    repository {
+                      name
+                    }
+                  }
+                }
+              ' \
+              -F id="$ISSUE_ID")
+
+            echo "$DELETE_RESPONSE" | jq -e \
+              '.data.deleteIssue.repository.name == "magnit_parser"' \
+              > /dev/null
+
+            echo "Issue удалён."
+          done
+
+          echo "Очистка завершена."
