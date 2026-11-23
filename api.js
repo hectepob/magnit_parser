@@ -79,78 +79,114 @@ window.MagnitApi = {
   },
 
   /**
-   * Ищет товары по названию бренда в конкретном магазине.
+   * Создаёт задачу поиска на GitHub.
    */
-  async searchGoods(term, storeCode) {
-    const url = "https://magnit.ru/webgate/v2/goods/search";
+  startGoodsSearch(term, stores) {
+    const requestId = crypto.randomUUID();
 
-    const requestBody = {
-      term: term,
-      pagination: {
-        limit: 50,
-        offset: 0
-      },
-      sort: {
-        order: "desc",
-        type: "popularity"
-      },
-      includeAdultGoods: true,
-      storeCode: String(storeCode),
-      storeType: "1",
-      catalogType: "1"
+    const payload = {
+      requestId,
+      brand: term,
+      stores: stores.map(store => ({
+        storeCode: String(store.storeCode)
+      }))
     };
 
-    let response;
+    const body = [
+      "Автоматический поиск товаров Магнит.",
+      "",
+      `Бренд: ${term}`,
+      `Количество магазинов: ${stores.length}`,
+      "",
+      "<!-- MAGNIT_SEARCH_REQUEST",
+      JSON.stringify(payload),
+      "-->"
+    ].join("\n");
 
-    try {
-      response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(requestBody)
-      });
-    } catch (error) {
-      const online = navigator.onLine;
+    const issueUrl = new URL(
+      "https://github.com/hectepob/magnit_parser/issues/new"
+    );
 
-      const details = [
-        `Тип ошибки: ${error.name || "неизвестен"}`,
-        `Сообщение браузера: ${error.message || "не предоставлено"}`,
-        `Интернет: ${online ? "подключение определяется как активное" : "браузер сообщает об отсутствии подключения"}`,
-        `Магазин: ${storeCode}`,
-        `Адрес запроса: ${url}`,
-        "Возможные причины: CORS, сетевая ошибка или блокировка запроса."
-      ];
+    issueUrl.searchParams.set(
+      "title",
+      `[MAGNIT-SEARCH] ${requestId}`
+    );
 
-      console.error("Ошибка запроса к API Магнита:", error);
+    issueUrl.searchParams.set("body", body);
 
-      throw new Error(details.join(" | "));
-    }
+    const issueWindow = window.open(
+      issueUrl.toString(),
+      "_blank"
+    );
 
-    if (!response.ok) {
+    if (!issueWindow) {
       throw new Error(
-        `HTTP ${response.status} ${response.statusText}. ` +
-        `Магазин: ${storeCode}.`
+        "Браузер заблокировал новую вкладку. " +
+        "Разрешите всплывающие окна для сайта и повторите поиск."
       );
     }
 
-    let data;
+    issueWindow.opener = null;
 
-    try {
-      data = await response.json();
-    } catch (error) {
-      throw new Error(
-        `API Магнита вернул некорректный JSON. Магазин: ${storeCode}.`
-      );
+    return {
+      requestId
+    };
+  },
+
+  /**
+   * Ожидает появления результатов с нужным requestId.
+   */
+  async waitForGoodsResults(requestId, onStatus) {
+    const maxAttempts = 200;
+    const interval = 3000;
+
+    const delay = ms =>
+      new Promise(resolve => setTimeout(resolve, ms));
+
+    const url = new URL(
+      "results.json",
+      window.location.href
+    );
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        url.searchParams.set("_", Date.now());
+
+        const response = await fetch(url, {
+          method: "GET",
+          cache: "no-store"
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (
+            data &&
+            data.requestId === requestId &&
+            Array.isArray(data.stores)
+          ) {
+            return data;
+          }
+        }
+      } catch (error) {
+        console.warn(
+          "Ожидание результатов поиска:",
+          error
+        );
+      }
+
+      if (attempt % 5 === 0 && onStatus) {
+        onStatus(
+          "Ожидаем завершения поиска на GitHub Actions..."
+        );
+      }
+
+      await delay(interval);
     }
 
-    if (!data || !Array.isArray(data.items)) {
-      throw new Error(
-        `В ответе API отсутствует список товаров. Магазин: ${storeCode}.`
-      );
-    }
-
-    return data.items;
+    throw new Error(
+      "Не удалось дождаться результатов за 10 минут. " +
+      "Проверьте выполнение workflow в GitHub Actions."
+    );
   }
 };
