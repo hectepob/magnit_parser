@@ -3,6 +3,7 @@
 
 document.addEventListener("DOMContentLoaded", () => {
   const cityInput = document.getElementById("city");
+  const storeSelect = document.getElementById("storeSelect");
   const centerInput = document.getElementById("center");
   const radiusInput = document.getElementById("radius");
   const brandInput = document.getElementById("brand");
@@ -24,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const goodsCountElement = document.getElementById("goodsCount");
 
   let currentFoundStores = [];
+  let storesData = null;
+  let storesLoadPromise = null;
 
   function plural(count, forms) {
     const n = count % 100;
@@ -53,6 +56,48 @@ document.addEventListener("DOMContentLoaded", () => {
     element.textContent = text;
 
     return element;
+  }
+
+  function populateStoreSelect(stores) {
+    storeSelect.replaceChildren();
+
+    const emptyOption = document.createElement("option");
+    emptyOption.value = "";
+    emptyOption.textContent = "Не выбран";
+
+    storeSelect.appendChild(emptyOption);
+
+    stores.forEach(store => {
+      const option = document.createElement("option");
+
+      option.value = store.storeCode;
+      option.textContent =
+        `${store.address} · ${store.storeCode}`;
+
+      storeSelect.appendChild(option);
+    });
+
+    storeSelect.value = "";
+  }
+
+  async function loadStoresData() {
+    if (!storesLoadPromise) {
+      storesLoadPromise = MagnitApi.loadStores()
+        .then(data => {
+          storesData = data;
+
+          cityInput.value = data.city;
+          populateStoreSelect(data.stores);
+
+          return data;
+        })
+        .catch(error => {
+          storesLoadPromise = null;
+          throw error;
+        });
+    }
+
+    return storesLoadPromise;
   }
 
   function renderResults(stores) {
@@ -169,16 +214,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setStatus("Загружаем список магазинов...");
 
     try {
-      const data = await MagnitApi.loadStores();
-
-      const requestedCity = cityInput.value.trim().toLocaleLowerCase("ru");
-      const loadedCity = data.city.trim().toLocaleLowerCase("ru");
-
-      if (requestedCity && loadedCity && requestedCity !== loadedCity) {
-        throw new Error(
-          `В файле загружены магазины города «${data.city}», а не «${cityInput.value.trim()}».`
-        );
-      }
+      const data = await loadStoresData();
 
       const storesOfSelectedFormats = data.stores.filter(store =>
         selectedFormats.includes(store.format)
@@ -294,20 +330,20 @@ document.addEventListener("DOMContentLoaded", () => {
           );
         }
 
-if (
-  product.price !== undefined &&
-  product.price !== null &&
-  Number.isFinite(Number(product.price))
-) {
-  const price = Number(product.price) / 100;
+        if (
+          product.price !== undefined &&
+          product.price !== null &&
+          Number.isFinite(Number(product.price))
+        ) {
+          const price = Number(product.price) / 100;
 
-  details.push(
-    `Цена: ${price.toLocaleString("ru-RU", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })} ₽`
-  );
-}
+          details.push(
+            `Цена: ${price.toLocaleString("ru-RU", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+            })} ₽`
+          );
+        }
 
         productBlock.appendChild(
           createTextElement(
@@ -417,6 +453,23 @@ if (
     }
   }
 
+  storeSelect.addEventListener("change", () => {
+    if (!storeSelect.value || !storesData) {
+      return;
+    }
+
+    const selectedStore = storesData.stores.find(
+      store => store.storeCode === storeSelect.value
+    );
+
+    if (!selectedStore) {
+      return;
+    }
+
+    centerInput.value =
+      `${selectedStore.latitude}, ${selectedStore.longitude}`;
+  });
+
   searchButton.addEventListener("click", searchStores);
   goodsSearchButton.addEventListener("click", searchBrand);
 
@@ -437,4 +490,16 @@ if (
       searchBrand();
     }
   });
+
+  loadStoresData()
+    .then(data => {
+      setStatus(
+        `Загружен список магазинов: ${data.stores.length}.`
+      );
+    })
+    .catch(error => {
+      setStatus(
+        error.message || "Не удалось загрузить список магазинов."
+      );
+    });
 });
