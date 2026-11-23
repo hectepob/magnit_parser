@@ -294,9 +294,20 @@ document.addEventListener("DOMContentLoaded", () => {
           );
         }
 
-        if (product.price !== undefined) {
-          details.push(`Цена API: ${product.price}`);
-        }
+if (
+  product.price !== undefined &&
+  product.price !== null &&
+  Number.isFinite(Number(product.price))
+) {
+  const price = Number(product.price) / 100;
+
+  details.push(
+    `Цена: ${price.toLocaleString("ru-RU", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })} ₽`
+  );
+}
 
         productBlock.appendChild(
           createTextElement(
