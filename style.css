@@ -139,7 +139,8 @@ button:disabled {
   font-size: 20px;
 }
 
-#resultsCount {
+#resultsCount,
+#goodsCount {
   color: #666;
   font-size: 14px;
 }
@@ -187,11 +188,15 @@ button:disabled {
   cursor: pointer;
 }
 
-/* Найденные магазины */
+/* Найденные магазины и магазины с отмеченными товарами */
+
+.store-item,
+.selected-store {
+  border-top: 1px solid #eee;
+}
 
 .store-item {
   padding: 9.33px 0;
-  border-top: 1px solid #eee;
 }
 
 .store-item:first-child {
@@ -218,8 +223,10 @@ button:disabled {
   min-width: 0;
 }
 
-.store-address {
+.store-address,
+.selected-store-address {
   margin-bottom: 6px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -258,14 +265,6 @@ button:disabled {
   font-weight: 400;
 }
 
-.product-name strong {
-  font-weight: 700;
-}
-
-.product-code {
-  font-weight: 400;
-}
-
 /* Магазины с отмеченными товарами */
 
 .selected-stores-block:empty {
@@ -282,13 +281,6 @@ button:disabled {
 
 .selected-store {
   padding: 12px 0;
-  border-top: 1px solid #eee;
-}
-
-.selected-store-address {
-  margin-bottom: 6px;
-  font-size: 16px;
-  font-weight: 600;
 }
 
 .selected-store-products {
