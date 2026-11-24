@@ -446,3 +446,11 @@ button:disabled {
 .selected-store-products li {
   padding: 2px 0;
 }
+
+.product-name strong {
+  font-weight: 700;
+}
+
+.product-code {
+  font-weight: 400;
+}
