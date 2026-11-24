@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: magnit-goods-search
+  cancel-in-progress: false
+
 jobs:
   dispatch:
     if: >-
@@ -47,20 +51,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    concurrency:
-      group: magnit-goods-search
-      cancel-in-progress: false
-
     permissions:
-      actions: read
       contents: read
-      issues: write
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      issues: read
 
     env:
       ISSUE_NUMBER: ${{ inputs.issue_number }}
@@ -344,32 +337,27 @@ jobs:
         with:
           path: _site
 
-      - name: Wait for GitHub Pages artifact
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
+  deploy:
+    if: github.event_name == 'workflow_dispatch'
+    needs: search
 
-          echo "Ожидаем появления артефакта github-pages..."
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-          for attempt in {1..15}; do
-            ARTIFACT_COUNT=$(gh api \
-              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages&per_page=100" \
-              --jq '.artifacts | length')
+    permissions:
+      actions: read
+      issues: write
+      pages: write
+      id-token: write
 
-            if [ "$ARTIFACT_COUNT" -gt 0 ]; then
-              echo "Артефакт найден. Можно начинать публикацию."
-              exit 0
-            fi
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-            echo "Попытка $attempt из 15: артефакт пока не виден."
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
 
-            sleep 2
-          done
-
-          echo "::error::Артефакт github-pages не появился в GitHub API за 30 секунд."
-          exit 1    
-
+    steps:
       - name: Deploy site
         id: deployment
         uses: actions/deploy-pages@v4
