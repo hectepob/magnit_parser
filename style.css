@@ -454,3 +454,16 @@ button:disabled {
 .product-code {
   font-weight: 400;
 }
+/* Единый шрифт названий магазинов в обоих списках */
+
+.selected-store-address {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Уменьшенное расстояние между найденными магазинами */
+
+.store-item {
+  padding: 9.33px 0;
+}
