@@ -378,3 +378,71 @@ button:disabled {
 .selected-store-products li {
   padding: 2px 0;
 }
+
+
+/* Компактный список найденных товаров */
+
+.product-group {
+  padding: 4px 0;
+  margin: 0;
+  border: none;
+}
+
+.product-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.product-checkbox {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #e30613;
+  cursor: pointer;
+}
+
+.product-name {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+/* Нижний список отмеченных товаров по магазинам */
+
+.selected-stores-block:empty {
+  display: none;
+}
+
+.selected-stores-heading {
+  padding-top: 18px;
+  margin-top: 12px;
+  border-top: 2px solid #e2e4e8;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.selected-store {
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+}
+
+.selected-store-address {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selected-store-products {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.selected-store-products li {
+  padding: 2px 0;
+}
