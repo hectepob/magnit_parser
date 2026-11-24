@@ -286,6 +286,7 @@ brandInput.focus({ preventScroll: true });
   }
 
 
+
 function renderGoodsResults(
   results,
   excludedWords = [],
@@ -295,6 +296,29 @@ function renderGoodsResults(
 
   const products = new Map();
   const errors = [];
+
+  function formatPrice(price) {
+    if (
+      price === undefined ||
+      price === null ||
+      !Number.isFinite(Number(price))
+    ) {
+      return null;
+    }
+
+    return (
+      (Number(price) / 100).toLocaleString("ru-RU", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + " ₽"
+    );
+  }
+
+  function sortByName(a, b) {
+    return a.name.localeCompare(b.name, "ru", {
+      sensitivity: "base"
+    });
+  }
 
   results.forEach(result => {
     if (result.error) {
@@ -339,7 +363,8 @@ function renderGoodsResults(
 
       products.get(productKey).stores.push({
         store: result.store,
-        quantity: product.quantity
+        quantity: product.quantity,
+        price: product.price
       });
     });
   });
@@ -391,7 +416,8 @@ function renderGoodsResults(
 
         storesMap.get(storeCode).products.push({
           name: product.name,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: item.price
         });
       });
     });
@@ -410,17 +436,30 @@ function renderGoodsResults(
       const productList = document.createElement("ul");
       productList.className = "selected-store-products";
 
+      item.products.sort(sortByName);
+
       item.products.forEach(product => {
         const productItem = document.createElement("li");
 
-        const quantityText =
+        const details = [];
+
+        if (
           product.quantity !== undefined &&
           product.quantity !== null
-            ? ` — остаток: ${product.quantity} шт.`
-            : " — остаток не указан";
+        ) {
+          details.push(`остаток: ${product.quantity} шт.`);
+        } else {
+          details.push("остаток не указан");
+        }
+
+        const price = formatPrice(product.price);
+
+        if (price !== null) {
+          details.push(`цена: ${price}`);
+        }
 
         productItem.textContent =
-          product.name + quantityText;
+          `${product.name} — ${details.join(" · ")}`;
 
         productList.appendChild(productItem);
       });
@@ -430,7 +469,10 @@ function renderGoodsResults(
     });
   }
 
-  products.forEach((product, productKey) => {
+  const sortedProducts = Array.from(products.entries())
+    .sort((a, b) => sortByName(a[1], b[1]));
+
+  sortedProducts.forEach(([productKey, product]) => {
     const productBlock = document.createElement("article");
     productBlock.className = "product-group";
 
@@ -513,7 +555,7 @@ function renderGoodsResults(
 
   return totalGoods;
 }
-  
+ 
   async function searchBrand() {
     const rawTerm = brandInput.value.trim();
 
