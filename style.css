@@ -17,6 +17,8 @@ body {
   margin: 0 auto;
 }
 
+/* Шапка */
+
 .header {
   margin-bottom: 28px;
 }
@@ -32,9 +34,12 @@ body {
   font-size: 14px;
 }
 
+/* Основные панели */
+
 .search-panel,
 .status-panel,
-.results-panel {
+.results-panel,
+.goods-panel {
   padding: 20px;
   margin-bottom: 16px;
   background: #fff;
@@ -42,8 +47,14 @@ body {
   border-radius: 10px;
 }
 
+/* Поля ввода */
+
 .field {
   margin-bottom: 16px;
+}
+
+.brand-field {
+  margin-bottom: 20px;
 }
 
 .field label,
@@ -55,21 +66,26 @@ body {
 }
 
 .field input,
-.brand-field input {
+.brand-field input,
+.field select {
   width: 100%;
   height: 42px;
   padding: 0 12px;
   border: 1px solid #c9cdd3;
   border-radius: 6px;
+  background: #fff;
   font-size: 16px;
 }
 
 .field input:focus,
-.brand-field input:focus {
+.brand-field input:focus,
+.field select:focus {
   outline: none;
   border-color: #e30613;
   box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.12);
 }
+
+/* Кнопки */
 
 button {
   width: 100%;
@@ -93,11 +109,22 @@ button:disabled {
   cursor: wait;
 }
 
+/* Статусные сообщения */
+
 .status-panel p {
   margin: 0;
   color: #555;
   font-size: 14px;
 }
+
+.goods-status {
+  margin: 14px 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Заголовки результатов */
 
 .results-header {
   display: flex;
@@ -123,8 +150,47 @@ button:disabled {
   font-size: 14px;
 }
 
+/* Выбор форматов магазинов */
+
+.format-field {
+  margin: 0 0 20px;
+  padding: 12px;
+  border: 1px solid #c9cdd3;
+  border-radius: 6px;
+}
+
+.format-field legend {
+  padding: 0 5px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.format-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.format-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.format-option input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #e30613;
+  cursor: pointer;
+}
+
+/* Найденные магазины */
+
 .store-item {
-  padding: 14px 0;
+  padding: 9.33px 0;
   border-top: 1px solid #eee;
 }
 
@@ -163,229 +229,10 @@ button:disabled {
   line-height: 1.5;
 }
 
-.brand-field {
-  margin-bottom: 20px;
-}
-
-.format-field {
-  margin: 0 0 20px;
-  padding: 12px;
-  border: 1px solid #c9cdd3;
-  border-radius: 6px;
-}
-
-.format-field legend {
-  padding: 0 5px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.format-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
-}
-
-.format-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.format-option input {
-  width: 17px;
-  height: 17px;
-  margin: 0;
-  accent-color: #e30613;
-  cursor: pointer;
-}
-
-@media (max-width: 600px) {
-  body {
-    padding: 14px;
-  }
-
-  .search-panel,
-  .status-panel,
-  .results-panel {
-    padding: 16px;
-  }
-
-  .header h1 {
-    font-size: 24px;
-  }
-}
-
-
-.goods-panel {
-  padding: 20px;
-  margin-bottom: 16px;
-  background: #fff;
-  border: 1px solid #e2e4e8;
-  border-radius: 10px;
-}
-
-.goods-status {
-  margin: 14px 0;
-  color: #555;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.goods-store {
-  padding: 16px 0;
-  border-top: 1px solid #eee;
-}
-
-.goods-store h3 {
-  margin: 0 0 12px;
-  font-size: 15px;
-  line-height: 1.4;
-}
-
-.product-item {
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: #f7f7f8;
-  border-radius: 6px;
-}
-
-.product-name {
-  margin-bottom: 6px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.goods-error {
-  color: #c62828;
-  font-size: 14px;
-}
-
-@media (max-width: 600px) {
-  .goods-panel {
-    padding: 16px;
-  }
-}
-
-.field select {
-  width: 100%;
-  height: 42px;
-  padding: 0 12px;
-  border: 1px solid #c9cdd3;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 16px;
-}
-
-.field select:focus {
-  outline: none;
-  border-color: #e30613;
-  box-shadow: 0 0 0 2px rgba(227, 6, 19, 0.12);
-}
-
-
-.product-group {
-  padding: 14px 0;
-  border-top: 1px solid #eee;
-}
-
-.product-group:first-child {
-  border-top: none;
-}
-
-.product-select {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.product-checkbox {
-  flex: 0 0 auto;
-  width: 19px;
-  height: 19px;
-  margin: 2px 0 0;
-  accent-color: #e30613;
-  cursor: pointer;
-}
-
-.product-content {
-  min-width: 0;
-}
-
-.product-store:first-child {
-  border-top: none;
-}
-
-.goods-errors {
-  padding-top: 14px;
-  margin-top: 14px;
-  border-top: 1px solid #eee;
-}
-
-.goods-error-heading {
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-
-/* Более компактное отображение найденных товаров */
-
-.product-name {
-  font-size: 13px;
-  line-height: 1.4;
-  font-weight: 600;
-}
-
-/* Нижний список отмеченных товаров по магазинам */
-
-.selected-stores-block:empty {
-  display: none;
-}
-
-.selected-stores-heading {
-  padding-top: 18px;
-  margin-top: 12px;
-  border-top: 2px solid #e2e4e8;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.selected-store {
-  padding: 12px 0;
-  border-top: 1px solid #eee;
-}
-
-.selected-store:first-of-type {
-  margin-top: 8px;
-}
-
-.selected-store-address {
-  margin-bottom: 6px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.selected-store-products {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.selected-store-products li {
-  padding: 2px 0;
-}
-
-
-/* Компактный список найденных товаров */
+/* Найденные товары */
 
 .product-group {
   padding: 4px 0;
-  margin: 0;
-  border: none;
 }
 
 .product-select {
@@ -411,7 +258,15 @@ button:disabled {
   font-weight: 400;
 }
 
-/* Нижний список отмеченных товаров по магазинам */
+.product-name strong {
+  font-weight: 700;
+}
+
+.product-code {
+  font-weight: 400;
+}
+
+/* Магазины с отмеченными товарами */
 
 .selected-stores-block:empty {
   display: none;
@@ -432,7 +287,7 @@ button:disabled {
 
 .selected-store-address {
   margin-bottom: 6px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -447,23 +302,39 @@ button:disabled {
   padding: 2px 0;
 }
 
-.product-name strong {
-  font-weight: 700;
+/* Ошибки поиска */
+
+.goods-errors {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid #eee;
 }
 
-.product-code {
-  font-weight: 400;
-}
-/* Единый шрифт названий магазинов в обоих списках */
-
-.selected-store-address {
-  font-family: inherit;
-  font-size: 16px;
+.goods-error-heading {
+  margin-bottom: 8px;
   font-weight: 600;
 }
 
-/* Уменьшенное расстояние между найденными магазинами */
+.goods-error {
+  color: #c62828;
+  font-size: 14px;
+}
 
-.store-item {
-  padding: 9.33px 0;
+/* Отображение на небольших экранах */
+
+@media (max-width: 600px) {
+  body {
+    padding: 14px;
+  }
+
+  .search-panel,
+  .status-panel,
+  .results-panel,
+  .goods-panel {
+    padding: 16px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
 }
