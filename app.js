@@ -260,6 +260,12 @@ function populateStoreSelect(stores, searchText = "") {
         .sort((a, b) => a.distance - b.distance);
 
       renderResults(foundStores);
+      brandInput.scrollIntoView({
+  behavior: "smooth",
+  block: "center"
+});
+
+brandInput.focus({ preventScroll: true });
 
       const updateInfo = data.updatedAt
         ? ` Данные обновлены: ${data.updatedAt}.`
@@ -279,6 +285,7 @@ function populateStoreSelect(stores, searchText = "") {
       searchButton.disabled = false;
     }
   }
+
 
 
 
@@ -328,25 +335,21 @@ function renderGoodsResults(
       if (!products.has(productKey)) {
         products.set(productKey, {
           name: product.name || "Название не указано",
-          code: productCode || null,
           stores: []
         });
       }
 
       products.get(productKey).stores.push({
-        store: result.store,
-        product
+        store: result.store
       });
     });
   });
 
   const fragment = document.createDocumentFragment();
 
-  // Верхний список: все найденные товары с галочками
   const productsList = document.createElement("div");
   productsList.className = "products-list";
 
-  // Нижний список: магазины с отмеченными товарами
   const selectedStoresBlock = document.createElement("div");
   selectedStoresBlock.className = "selected-stores-block";
 
@@ -425,30 +428,15 @@ function renderGoodsResults(
     checkbox.className = "product-checkbox";
     checkbox.dataset.productKey = productKey;
 
-    const productContent = document.createElement("div");
-    productContent.className = "product-content";
-
-    productContent.appendChild(
-      createTextElement(
-        "product-name",
-        product.name
-      )
-    );
-
-    if (product.code) {
-      productContent.appendChild(
-        createTextElement(
-          "store-details",
-          `Код товара: ${product.code}`
-        )
-      );
-    }
+    const productName = document.createElement("span");
+    productName.className = "product-name";
+    productName.textContent = product.name;
 
     const label = document.createElement("label");
     label.className = "product-select";
 
     label.appendChild(checkbox);
-    label.appendChild(productContent);
+    label.appendChild(productName);
 
     productBlock.appendChild(label);
     productsList.appendChild(productBlock);
@@ -504,6 +492,7 @@ function renderGoodsResults(
 
   return totalGoods;
 }
+
   
   async function searchBrand() {
     const rawTerm = brandInput.value.trim();
@@ -656,6 +645,12 @@ const totalGoods = renderGoodsResults(
       searchBrand();
     }
   });
+
+  excludeWordsInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    searchBrand();
+  }
+});
 
   loadStoresData()
     .then(data => {
