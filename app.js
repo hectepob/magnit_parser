@@ -281,6 +281,7 @@ function populateStoreSelect(stores, searchText = "") {
   }
 
 
+
 function renderGoodsResults(
   results,
   excludedWords = [],
@@ -341,13 +342,88 @@ function renderGoodsResults(
 
   const fragment = document.createDocumentFragment();
 
-  products.forEach(product => {
+  // Верхний список: все найденные товары с галочками
+  const productsList = document.createElement("div");
+  productsList.className = "products-list";
+
+  // Нижний список: магазины с отмеченными товарами
+  const selectedStoresBlock = document.createElement("div");
+  selectedStoresBlock.className = "selected-stores-block";
+
+  function renderSelectedStores() {
+    selectedStoresBlock.replaceChildren();
+
+    const selectedProducts = Array.from(
+      productsList.querySelectorAll(".product-checkbox:checked")
+    );
+
+    if (selectedProducts.length === 0) {
+      return;
+    }
+
+    selectedStoresBlock.appendChild(
+      createTextElement(
+        "selected-stores-heading",
+        "Магазины с отмеченными товарами"
+      )
+    );
+
+    const storesMap = new Map();
+
+    selectedProducts.forEach(checkbox => {
+      const product = products.get(checkbox.dataset.productKey);
+
+      if (!product) {
+        return;
+      }
+
+      product.stores.forEach(item => {
+        const storeCode = String(item.store.storeCode);
+
+        if (!storesMap.has(storeCode)) {
+          storesMap.set(storeCode, {
+            store: item.store,
+            products: []
+          });
+        }
+
+        storesMap.get(storeCode).products.push(product.name);
+      });
+    });
+
+    storesMap.forEach(item => {
+      const storeBlock = document.createElement("div");
+      storeBlock.className = "selected-store";
+
+      storeBlock.appendChild(
+        createTextElement(
+          "selected-store-address",
+          `${item.store.address} · ${item.store.storeCode}`
+        )
+      );
+
+      const productList = document.createElement("ul");
+      productList.className = "selected-store-products";
+
+      item.products.forEach(productName => {
+        const productItem = document.createElement("li");
+        productItem.textContent = productName;
+        productList.appendChild(productItem);
+      });
+
+      storeBlock.appendChild(productList);
+      selectedStoresBlock.appendChild(storeBlock);
+    });
+  }
+
+  products.forEach((product, productKey) => {
     const productBlock = document.createElement("article");
     productBlock.className = "product-group";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.className = "product-checkbox";
+    checkbox.dataset.productKey = productKey;
 
     const productContent = document.createElement("div");
     productContent.className = "product-content";
@@ -375,68 +451,9 @@ function renderGoodsResults(
     label.appendChild(productContent);
 
     productBlock.appendChild(label);
+    productsList.appendChild(productBlock);
 
-    const storesBlock = document.createElement("div");
-    storesBlock.className = "product-stores";
-    storesBlock.hidden = true;
-
-    product.stores.forEach(item => {
-      const storeBlock = document.createElement("div");
-      storeBlock.className = "product-store";
-
-      storeBlock.appendChild(
-        createTextElement(
-          "store-address",
-          `${item.store.address} · ${item.store.storeCode}`
-        )
-      );
-
-      const details = [];
-      const foundProduct = item.product;
-
-      if (foundProduct.quantity !== undefined) {
-        details.push(`Остаток: ${foundProduct.quantity}`);
-
-        details.push(
-          Number(foundProduct.quantity) > 0
-            ? "В наличии"
-            : "Нет в наличии"
-        );
-      }
-
-      if (
-        foundProduct.price !== undefined &&
-        foundProduct.price !== null &&
-        Number.isFinite(Number(foundProduct.price))
-      ) {
-        const price = Number(foundProduct.price) / 100;
-
-        details.push(
-          `Цена: ${price.toLocaleString("ru-RU", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          })} ₽`
-        );
-      }
-
-      if (details.length > 0) {
-        storeBlock.appendChild(
-          createTextElement(
-            "store-details",
-            details.join(" · ")
-          )
-        );
-      }
-
-      storesBlock.appendChild(storeBlock);
-    });
-
-    checkbox.addEventListener("change", () => {
-      storesBlock.hidden = !checkbox.checked;
-    });
-
-    productBlock.appendChild(storesBlock);
-    fragment.appendChild(productBlock);
+    checkbox.addEventListener("change", renderSelectedStores);
   });
 
   if (products.size === 0 && errors.length === 0) {
@@ -446,6 +463,9 @@ function renderGoodsResults(
         "Подходящих товаров не найдено."
       )
     );
+  } else {
+    fragment.appendChild(productsList);
+    fragment.appendChild(selectedStoresBlock);
   }
 
   if (errors.length > 0) {
@@ -484,8 +504,7 @@ function renderGoodsResults(
 
   return totalGoods;
 }
-
-
+  
   async function searchBrand() {
     const rawTerm = brandInput.value.trim();
 
