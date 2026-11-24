@@ -287,8 +287,6 @@ brandInput.focus({ preventScroll: true });
   }
 
 
-
-
 function renderGoodsResults(
   results,
   excludedWords = [],
@@ -335,12 +333,14 @@ function renderGoodsResults(
       if (!products.has(productKey)) {
         products.set(productKey, {
           name: product.name || "Название не указано",
+          code: productCode || null,
           stores: []
         });
       }
 
       products.get(productKey).stores.push({
-        store: result.store
+        store: result.store,
+        quantity: product.quantity
       });
     });
   });
@@ -390,7 +390,10 @@ function renderGoodsResults(
           });
         }
 
-        storesMap.get(storeCode).products.push(product.name);
+        storesMap.get(storeCode).products.push({
+          name: product.name,
+          quantity: item.quantity
+        });
       });
     });
 
@@ -408,9 +411,18 @@ function renderGoodsResults(
       const productList = document.createElement("ul");
       productList.className = "selected-store-products";
 
-      item.products.forEach(productName => {
+      item.products.forEach(product => {
         const productItem = document.createElement("li");
-        productItem.textContent = productName;
+
+        const quantityText =
+          product.quantity !== undefined &&
+          product.quantity !== null
+            ? ` — остаток: ${product.quantity} шт.`
+            : " — остаток не указан";
+
+        productItem.textContent =
+          product.name + quantityText;
+
         productList.appendChild(productItem);
       });
 
@@ -430,7 +442,17 @@ function renderGoodsResults(
 
     const productName = document.createElement("span");
     productName.className = "product-name";
-    productName.textContent = product.name;
+
+    const nameElement = document.createElement("strong");
+    nameElement.textContent = product.name;
+    productName.appendChild(nameElement);
+
+    if (product.code !== null) {
+      const codeElement = document.createElement("span");
+      codeElement.className = "product-code";
+      codeElement.textContent = ` (${product.code})`;
+      productName.appendChild(codeElement);
+    }
 
     const label = document.createElement("label");
     label.className = "product-select";
@@ -492,7 +514,6 @@ function renderGoodsResults(
 
   return totalGoods;
 }
-
   
   async function searchBrand() {
     const rawTerm = brandInput.value.trim();
