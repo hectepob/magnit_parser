@@ -280,149 +280,211 @@ function populateStoreSelect(stores, searchText = "") {
     }
   }
 
-  function renderGoodsResults(
+
+function renderGoodsResults(
   results,
   excludedWords = [],
   requiredWords = []
 ) {
-    goodsResultsElement.replaceChildren();
+  goodsResultsElement.replaceChildren();
 
-    let totalGoods = 0;
+  const products = new Map();
+  const errors = [];
 
-    const fragment = document.createDocumentFragment();
+  results.forEach(result => {
+    if (result.error) {
+      errors.push({
+        store: result.store,
+        error: result.error
+      });
 
-    results.forEach(result => {
-      const storeBlock = document.createElement("article");
-      storeBlock.className = "goods-store";
+      return;
+    }
 
-      const heading = document.createElement("h3");
-      heading.textContent =
-        `${result.store.address} · ${result.store.storeCode}`;
+    const filteredItems = result.items.filter(product => {
+      const productName = String(
+        product.name || ""
+      ).toLocaleLowerCase("ru");
 
-      storeBlock.appendChild(heading);
+      const containsAllRequiredWords = requiredWords.every(word =>
+        productName.includes(word)
+      );
 
-      if (result.error) {
-        storeBlock.appendChild(
-          createTextElement(
-            "goods-error",
-            `Ошибка запроса: ${result.error}`
-          )
-        );
+      const containsExcludedWords = excludedWords.some(word =>
+        productName.includes(word)
+      );
 
-        fragment.appendChild(storeBlock);
-        return;
+      return containsAllRequiredWords && !containsExcludedWords;
+    });
+
+    filteredItems.forEach(product => {
+      const productCode = product.productId || product.id;
+
+      const productKey = productCode
+        ? `id:${productCode}`
+        : `name:${String(product.name || "").toLocaleLowerCase("ru")}`;
+
+      if (!products.has(productKey)) {
+        products.set(productKey, {
+          name: product.name || "Название не указано",
+          code: productCode || null,
+          stores: []
+        });
       }
 
-if (result.items.length === 0) {
-  storeBlock.appendChild(
-    createTextElement(
-      "empty-state",
-      "Товары по запросу не найдены."
-    )
-  );
+      products.get(productKey).stores.push({
+        store: result.store,
+        product
+      });
+    });
+  });
 
-  fragment.appendChild(storeBlock);
-  return;
-}
+  const fragment = document.createDocumentFragment();
 
-const filteredItems = result.items.filter(product => {
-  const productName = String(
-    product.name || ""
-  ).toLocaleLowerCase("ru");
+  products.forEach(product => {
+    const productBlock = document.createElement("article");
+    productBlock.className = "product-group";
 
-  const containsAllRequiredWords = requiredWords.every(word =>
-    productName.includes(word)
-  );
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "product-checkbox";
 
-  const containsExcludedWords = excludedWords.some(word =>
-    productName.includes(word)
-  );
+    const productContent = document.createElement("div");
+    productContent.className = "product-content";
 
-  return containsAllRequiredWords && !containsExcludedWords;
-});
+    productContent.appendChild(
+      createTextElement(
+        "product-name",
+        product.name
+      )
+    );
 
-if (filteredItems.length === 0) {
-  storeBlock.appendChild(
-    createTextElement(
-      "empty-state",
-      "Все найденные товары исключены заданными словами."
-    )
-  );
+    if (product.code) {
+      productContent.appendChild(
+        createTextElement(
+          "store-details",
+          `Код товара: ${product.code}`
+        )
+      );
+    }
 
-  fragment.appendChild(storeBlock);
-  return;
-}
+    const label = document.createElement("label");
+    label.className = "product-select";
 
-totalGoods += filteredItems.length;
+    label.appendChild(checkbox);
+    label.appendChild(productContent);
 
-filteredItems.forEach(product => {
-        const productBlock = document.createElement("div");
-        productBlock.className = "product-item";
+    productBlock.appendChild(label);
 
-        productBlock.appendChild(
-          createTextElement(
-            "product-name",
-            product.name || "Название не указано"
-          )
+    const storesBlock = document.createElement("div");
+    storesBlock.className = "product-stores";
+    storesBlock.hidden = true;
+
+    product.stores.forEach(item => {
+      const storeBlock = document.createElement("div");
+      storeBlock.className = "product-store";
+
+      storeBlock.appendChild(
+        createTextElement(
+          "store-address",
+          `${item.store.address} · ${item.store.storeCode}`
+        )
+      );
+
+      const details = [];
+      const foundProduct = item.product;
+
+      if (foundProduct.quantity !== undefined) {
+        details.push(`Остаток: ${foundProduct.quantity}`);
+
+        details.push(
+          Number(foundProduct.quantity) > 0
+            ? "В наличии"
+            : "Нет в наличии"
         );
+      }
 
-        const details = [];
+      if (
+        foundProduct.price !== undefined &&
+        foundProduct.price !== null &&
+        Number.isFinite(Number(foundProduct.price))
+      ) {
+        const price = Number(foundProduct.price) / 100;
 
-        if (product.productId || product.id) {
-          details.push(
-            `Код товара: ${product.productId || product.id}`
-          );
-        }
+        details.push(
+          `Цена: ${price.toLocaleString("ru-RU", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          })} ₽`
+        );
+      }
 
-        if (product.quantity !== undefined) {
-          details.push(`Остаток: ${product.quantity}`);
-
-          details.push(
-            Number(product.quantity) > 0
-              ? "В наличии"
-              : "Нет в наличии"
-          );
-        }
-
-        if (
-          product.price !== undefined &&
-          product.price !== null &&
-          Number.isFinite(Number(product.price))
-        ) {
-          const price = Number(product.price) / 100;
-
-          details.push(
-            `Цена: ${price.toLocaleString("ru-RU", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })} ₽`
-          );
-        }
-
-        productBlock.appendChild(
+      if (details.length > 0) {
+        storeBlock.appendChild(
           createTextElement(
             "store-details",
             details.join(" · ")
           )
         );
+      }
 
-        storeBlock.appendChild(productBlock);
-      });
-
-      fragment.appendChild(storeBlock);
+      storesBlock.appendChild(storeBlock);
     });
 
-    goodsResultsElement.appendChild(fragment);
+    checkbox.addEventListener("change", () => {
+      storesBlock.hidden = !checkbox.checked;
+    });
 
-    goodsCountElement.textContent =
-      `${totalGoods} ${plural(totalGoods, [
-        "товар",
-        "товара",
-        "товаров"
-      ])}`;
+    productBlock.appendChild(storesBlock);
+    fragment.appendChild(productBlock);
+  });
 
-    return totalGoods;
+  if (products.size === 0 && errors.length === 0) {
+    fragment.appendChild(
+      createTextElement(
+        "empty-state",
+        "Подходящих товаров не найдено."
+      )
+    );
   }
+
+  if (errors.length > 0) {
+    const errorsBlock = document.createElement("div");
+    errorsBlock.className = "goods-errors";
+
+    errorsBlock.appendChild(
+      createTextElement(
+        "goods-error-heading",
+        "Ошибки при поиске в магазинах:"
+      )
+    );
+
+    errors.forEach(item => {
+      errorsBlock.appendChild(
+        createTextElement(
+          "goods-error",
+          `${item.store.address} · ${item.store.storeCode}: ${item.error}`
+        )
+      );
+    });
+
+    fragment.appendChild(errorsBlock);
+  }
+
+  goodsResultsElement.appendChild(fragment);
+
+  const totalGoods = products.size;
+
+  goodsCountElement.textContent =
+    `${totalGoods} ${plural(totalGoods, [
+      "товар",
+      "товара",
+      "товаров"
+    ])}`;
+
+  return totalGoods;
+}
+
 
   async function searchBrand() {
     const rawTerm = brandInput.value.trim();
