@@ -1,40 +1,110 @@
+
 name: Search Magnit goods
 
 on:
   issues:
     types: [opened]
 
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Номер Issue с параметрами поиска"
+        required: true
+        type: string
+
 permissions:
   contents: read
-  issues: write
-  pages: write
-  id-token: write
-
-concurrency:
-  group: magnit-goods-search
-  cancel-in-progress: false
 
 jobs:
-  search:
+  dispatch:
     if: >-
+      github.event_name == 'issues' &&
       github.event.issue.user.login == 'hectepob' &&
       startsWith(github.event.issue.title, '[MAGNIT-SEARCH]')
 
     runs-on: ubuntu-latest
+
+    permissions:
+      actions: write
+
+    steps:
+      - name: Start search workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh workflow run goods-search.yml \
+            --ref main \
+            -f issue_number="$ISSUE_NUMBER"
+
+  search:
+    if: github.event_name == 'workflow_dispatch'
+
+    runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    concurrency:
+      group: magnit-goods-search
+      cancel-in-progress: false
+
+    permissions:
+      contents: read
+      issues: write
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue_number }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Search goods in selected stores
+      - name: Validate and load search Issue
         env:
-          ISSUE_BODY_JSON: ${{ toJSON(github.event.issue.body) }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if ! [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "::error::Некорректный номер Issue"
+            exit 1
+          fi
+
+          ISSUE_JSON="$(gh api \
+            "repos/$GITHUB_REPOSITORY/issues/$ISSUE_NUMBER")"
+
+          ISSUE_AUTHOR="$(jq -r '.user.login // ""' <<< "$ISSUE_JSON")"
+          ISSUE_TITLE="$(jq -r '.title // ""' <<< "$ISSUE_JSON")"
+
+          if [ "$ISSUE_AUTHOR" != "hectepob" ]; then
+            echo "::error::Issue создан не разрешённым пользователем"
+            exit 1
+          fi
+
+          if [[ "$ISSUE_TITLE" != "[MAGNIT-SEARCH]"* ]]; then
+            echo "::error::Некорректный заголовок Issue"
+            exit 1
+          fi
+
+          ISSUE_BODY_JSON="$(jq -c '.body' <<< "$ISSUE_JSON")"
+
+          if [ "$ISSUE_BODY_JSON" = "null" ]; then
+            echo "::error::Тело Issue пустое"
+            exit 1
+          fi
+
+          echo "ISSUE_BODY_JSON=$ISSUE_BODY_JSON" >> "$GITHUB_ENV"
+
+          echo "Параметры Issue №$ISSUE_NUMBER загружены."
+          echo "Автор: $ISSUE_AUTHOR"
+          echo "Заголовок: $ISSUE_TITLE"
+
+      - name: Search goods in selected stores
         run: |
           python3 - <<'PY'
           import gzip
@@ -43,11 +113,14 @@ jobs:
           import re
           import sys
           import urllib.request
-          import urllib.error
           from datetime import datetime, timezone
 
           # Получаем параметры из тела Issue
           body = json.loads(os.environ["ISSUE_BODY_JSON"])
+
+          if not isinstance(body, str):
+              print("::error::Некорректное тело Issue")
+              sys.exit(1)
 
           match = re.search(
               r"<!-- MAGNIT_SEARCH_REQUEST\s*(\{.*?\})\s*-->",
@@ -165,7 +238,7 @@ jobs:
                           raise RuntimeError(
                               f"HTTP {response.status}"
                           )
-                      
+
                       raw_data = response.read()
 
                   # Распаковываем gzip, если сервер вернул сжатый ответ
@@ -175,7 +248,7 @@ jobs:
                   data = json.loads(
                       raw_data.decode("utf-8-sig")
                   )
-                  
+
                   items = data.get("items")
 
                   if not isinstance(items, list):
@@ -273,7 +346,6 @@ jobs:
       - name: Close search issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           gh issue close "$ISSUE_NUMBER" \
             --repo "$GITHUB_REPOSITORY" \
